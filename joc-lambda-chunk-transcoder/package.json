@@ -1,0 +1,22 @@
+{
+  "name": "joc-lambda-chunk-transcoder",
+  "version": "1.0.0",
+  "description": "Lambda that transcodes chunks of video",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "video",
+    "live",
+    "transcoder",
+    "distributed"
+  ],
+  "author": "Jordi Cenzano",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "aws-sdk": "^2.809.0",
+    "tempy": "^1.0.0",
+    "uuid": "^8.3.2"
+  }
+}

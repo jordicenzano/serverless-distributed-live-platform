@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Chunk-Transcoder",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/joc-lambda-chunk-transcoder/local-test.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Manigest-Generator",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/joc-lambda-manifest-generator/local-test.js"
+        }
+    ]
+}
