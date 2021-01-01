@@ -38,11 +38,11 @@ const testEvent = {
   },
   "pathParameters":{
     "renditionID":"480p",
-    "streamID":"20201224175505"
+    "streamID":"20210101225624"
     //"streamID":"1"
   },
   "queryStringParameters": {
-    "liveType": "vod",
+    "liveType": "live",
     //"chunksLatency": "-1",
     //"chunksNumber": "1000"
   },

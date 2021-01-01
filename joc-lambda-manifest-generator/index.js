@@ -45,7 +45,8 @@ const liveType = {
     VOD: 'vod'
 }
 const defaultParams = {
-    chunksLatency: 2, // Deliver live edge -chunksLatency
+    latency: 20,// Deliver live edge - X secs (X = max transcoding chunk time)
+    chunksLatency: 0, // Deliver live edge - X chunks
     chunksNumber: 3, // Deliver # chunks
     fromEpochS: -1,
     toEpochS: -1, // Not compatible with chunksNumber
@@ -56,6 +57,7 @@ const defaultParams = {
 }
 
 const filterFromManifestToChunklistQS = [
+    'latency',
     'chunksLatency',
     'chunksNumber', 
     'fromEpochS', 
@@ -113,7 +115,7 @@ exports.handler = async (event, context) => {
 }
 
 function getTargetDurationMs(chunks) {
-    let retMs = 100000;
+    let retMs = 10000;
 
     for (let n = 0; n < chunks.length; n++) {
         const chunk = chunks[n];
@@ -236,16 +238,28 @@ function getURLData(event, defaultConfig) {
             // For VOD there we return all media
             ret.chunksNumber = -1;
         }
-        if (checkPresentAndType(event.queryStringParameters, 'chunksLatency', 'string', true)) {
+
+        // Load latency to provide chunklist 
+        // Check "latency", if not there use default
+        if (checkPresentAndType(event.queryStringParameters, 'latency', 'string', true)) {
+            ret.latency = parseInt(event.queryStringParameters.latency, 10);
+        }
+        else if (checkPresentAndType(event.queryStringParameters, 'chunksLatency', 'string', true)) {
             ret.chunksLatency = parseInt(event.queryStringParameters.chunksLatency, 10);
         }
+
+        // Load from 
         if (checkPresentAndType(event.queryStringParameters, 'fromEpochS', 'string', true)) {
             ret.fromEpochS = parseInt(event.queryStringParameters.fromEpochS);
         }
-        else if ((ret.liveType === liveType.VOD) && (checkPresentAndType(event.queryStringParameters, 'toEpochS', 'string', true))) {
+
+        // Load to (only valid for VOD)
+        if ((ret.liveType === liveType.VOD) && (checkPresentAndType(event.queryStringParameters, 'toEpochS', 'string', true))) {
             ret.toEpochS = parseInt(event.queryStringParameters.toEpochS);
         }
-        if ((ret.toEpochS >= 0) && (ret.toEpochS <= ret.fromEpochS)) {
+
+        // Check from - to
+        if ((ret.fromEpochS >= 0) && (ret.toEpochS >= 0) && (ret.toEpochS <= ret.fromEpochS)) {
             throw new HTTPErrorData(400, 'toEpochS can not be equal or lower than fromEpochS');
         }
     }
@@ -268,13 +282,16 @@ async function ddbGetChunks(dbbChunksData, manifestConfig) {
 
     const ddb = new aws.DynamoDB({region: dbbChunksData.region, maxRetries: DDB_MAX_RETRIES_DEF});
     // Query Item
-    const wcStartEpochSStr = "0";
-    const wcEndEpochSStr = "99999999999999999999999999999999999999";
+    let wcStartEpochSStr = "0";
+    let wcEndEpochSStr = "99999999999999999999999999999999999999";
     if (manifestConfig.fromEpochS > 0) {
         wcStartEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000).toString(); // To ns
     }
     if (manifestConfig.toEpochS > 0) {
         wcEndEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000).toString(); // To ns
+    } else if (manifestConfig.latency > 0) {
+        const nowS = Date.now();
+        wcEndEpochSStr = Math.floor(nowS * 1000 * 1000).toString(); // To ns
     }
     const params = {
         TableName: dbbChunksData.tableName,
@@ -313,7 +330,7 @@ async function ddbGetChunks(dbbChunksData, manifestConfig) {
     while (ret.length > limitChunksToGet) {
         ret.splice(-1,1);
     }
-    // Remove extra items from the newest
+    // Remove extra items from the newest, since perhaps those are 
     if (manifestConfig.chunksLatency > 0) {
         let chunksToDel = manifestConfig.chunksLatency;
         while (chunksToDel > 0) {
