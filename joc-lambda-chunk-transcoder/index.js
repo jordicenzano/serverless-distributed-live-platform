@@ -163,7 +163,7 @@ async function processRecord(dbbConfigData, record, transcoderConfig, context) {
             let dstS3Bucket = transcoderConfig.getParamDefault('dstS3Bucket', bucket);
             
             // Create transcoding settings
-            const transcodeData = createTranscodeData(abrData.srcLocalFilePath, dstS3Bucket, abrData.srcS3ObjectKey, transcoderConfig, context);
+            const transcodeData = createTranscodeData(abrData.srcLocalFilePath, transcoderConfig, context);
             abrData.ffmpegArgs = transcodeData.ffmpegArgs;
             transcodeData.dstFilesData.forEach(dstFileData => {
                 abrData.addRenditionData(dstFileData.dstLocalFilePath, dstS3Bucket, abrData.srcS3ObjectKey, transcoderConfig.getParam('s3OutputPrefix'), dstFileData.rendition);
@@ -244,12 +244,16 @@ function createDstS3ObjectKey(srcS3ObjectKey, s3ABRPath, renditionID) {
 }
 
 // Creates transcode command args
-function createTranscodeData(srcLocalFilePath, dstS3Bucket, srcS3ObjectKey, transcoderConfig, context) {
+function createTranscodeData(srcLocalFilePath, transcoderConfig, context) {
     const ffmpegArgs = [];
     const dstFilesData = [];
 
     // Base options (sync)
     ffmpegInitSyncArgs = ['-hide_banner', '-y', '-i', srcLocalFilePath, '-vsync', '0', '-copyts'];
+
+    // Add pix_fmt for processing
+    ffmpegInitSyncArgs.push('-pix_fmt', transcoderConfig.getParam('video_pix_fmt'));
+    
     ffmpegArgs.push(...ffmpegInitSyncArgs);
 
     ffmpegRenditionArgs = [];
@@ -260,12 +264,18 @@ function createTranscodeData(srcLocalFilePath, dstS3Bucket, srcS3ObjectKey, tran
         ffmpegOverlayArgs = [];
         if (transcoderConfig.getParam('overlayEncodingData')) {
             const fontPath = getFontPath(context);
-            const overlayString = `Lane ${rendition.width}x${rendition.height}@${rendition.video_h264_preset}-${rendition.video_h264_level} ${rendition.video_maxrate/1024} Kbps`;
-            ffmpegOverlayArgs = ['-vf', 'drawtext=fontfile=' + fontPath + ': text=\'' + overlayString + '\': x=20: y=100: fontsize=20: fontcolor=pink: box=1: boxcolor=0x00000099'];
+            const overlayString = `Lane ${rendition.width}x${rendition.height}@${rendition.video_h264_preset}-${rendition.video_h264_profile}-${rendition.video_crf}-${Math.floor(rendition.video_maxrate/1024)}Kbps`;
+            ffmpegOverlayArgs = ['-vf', 'drawtext=fontfile=' + fontPath + ':text=\'' + overlayString + '\':x=20:y=100:fontsize=60:fontcolor=pink:box=1:boxcolor=0x00000099'];
         }
 
         // Video encoding & scale
-        ffmpegVideoEncArgs = ['-s', `${rendition.width}x${rendition.height}`, '-c:v', 'libx264', '-preset', rendition.video_h264_preset, '-maxrate', rendition.video_maxrate, '-bufsize', rendition.video_buffersize];
+        ffmpegVideoEncArgs = ['-s', `${rendition.width}x${rendition.height}`, '-c:v', 'libx264', '-preset', rendition.video_h264_preset, '-profile:v', rendition.video_h264_profile, '-crf', rendition.video_crf, '-maxrate', rendition.video_maxrate, '-bufsize', rendition.video_buffersize, '-b-pyramid', rendition.video_h264_bpyramid];
+
+        //x264-params
+        ffmpegx264ParamsArgs = [];
+        if (typeof(rendition.video_x264_params) === 'string') {
+            ffmpegx264ParamsArgs.push('-x264-params', rendition.video_x264_params)
+        }
 
         // Audio encoding
 		// TODO:
@@ -288,6 +298,7 @@ function createTranscodeData(srcLocalFilePath, dstS3Bucket, srcS3ObjectKey, tran
         // Adds all args
         ffmpegArgs.push(...ffmpegOverlayArgs);
         ffmpegArgs.push(...ffmpegVideoEncArgs);
+        ffmpegArgs.push(...ffmpegx264ParamsArgs);
         ffmpegArgs.push(...ffmpegAudioEncArgs);
         ffmpegArgs.push(...ffmpegMuxArgs);
         ffmpegArgs.push(...ffmpegOutputArgs);
@@ -484,15 +495,18 @@ function testFfmpeg(context) {
 
 function prepareFfmpeg(context) {
     if (!isLocalDebug(context)) {    
+        // Copy ffmpeg if does NOT exists in dst
         if (fs.existsSync(context.ffmpegData.LAMBDA_DST) == false) {
             execInternalSync('cp', [context.ffmpegData.LAMBDA_SRC, context.ffmpegData.LAMBDA_DST]);
             execInternalSync('chmod', ['+x', context.ffmpegData.LAMBDA_DST]);
-            context.ffmpegData.path = context.ffmpegData.LAMBDA_DST;
+            
         }
+        context.ffmpegData.path = context.ffmpegData.LAMBDA_DST;
+
         if (fs.existsSync(context.fontData.LAMBDA_DST) == false) {
             execInternalSync('cp', [context.fontData.LAMBDA_SRC, context.fontData.LAMBDA_DST]);
-            context.fontData.path = context.fontData.LAMBDA_DST;
         }
+        context.fontData.path = context.fontData.LAMBDA_DST;
     }
     else {
         context.ffmpegData.path = context.ffmpegData.LOCAL;

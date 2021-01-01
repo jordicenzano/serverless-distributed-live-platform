@@ -133,7 +133,7 @@ function createManifest(manifestConfig, transcoderConfig) {
         const rendition = transcoderConfig.getParam('renditions')[n];
         manifestLines.push(`#EXT-X-STREAM-INF:BANDWIDTH=${rendition.video_maxrate},RESOLUTION=${rendition.width}x${rendition.height}`);
         // Chunklist URL (relative)
-        manifestLines.push(`./${rendition.ID}/chunklist.m3u8?${createQSForChunklist(manifestConfig)}`);
+        manifestLines.push(`${rendition.ID}/chunklist.m3u8?${createQSForChunklist(manifestConfig)}`);
     }
     return manifestLines.join("\n");
 }

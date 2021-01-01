@@ -7,34 +7,42 @@ const aws = require('aws-sdk');
 // Example config object
 /*
 {
+  "config-name": "default",
+  "desc": "1080p (Premium 6 renditions)",
+  "value": {
     "copyOriginalContentTypeToABRChunks": true,
     "copyOriginalMetadataToABRChunks": true,
+    "mediaCdnPrefix": "https://XXXXXXXXXXXXXX.cloudfront.net",
     "overlayEncodingData": true,
     "overlayMessage": "Test-",
-    "publicReadToABRChunks": true,
+    "publicReadToABRChunks": false,
     "renditions": [
       {
-        "height": 480,
-        "ID": "480p",
-        "video_buffersize": 4194304,
-        "video_h264_level": "3.0",
-        "video_h264_preset": "ultrafast",
-        "video_h264_profile": "main",
-        "video_maxrate": 2097152,
-        "width": 854
+        "height": 1080,
+        "ID": "1080p",
+        "video_buffersize": 7000000,
+        "video_crf": 23,
+        "video_h264_bpyramid": "strict",
+        "video_h264_preset": "slow",
+        "video_h264_profile": "high",
+        "video_maxrate": 3500000,
+        "width": 1920
       },
       {
-        "height": 360,
-        "ID": "360p",
-        "video_buffersize": 2097152,
-        "video_h264_level": "3.0",
-        "video_h264_preset": "ultrafast",
-        "video_h264_profile": "main",
-        "video_maxrate": 1048576,
-        "width": 640
+        "height": 144,
+        "ID": "144p",
+        "video_buffersize": 200000,
+        "video_crf": 23,
+        "video_h264_bpyramid": "strict",
+        "video_h264_preset": "slow",
+        "video_h264_profile": "high",
+        "video_maxrate": 100000,
+        "video_pix_fmt": "yuv420p",
+        "width": 256
       }
     ],
-    "s3OutputPrefix": "output/"
+    "s3OutputPrefix": "output/",
+    "video_pix_fmt": "yuv420p"
   }
 }
 */
