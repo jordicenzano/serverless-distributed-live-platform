@@ -84,13 +84,34 @@ class ABRData {
     }
 }
 
+const logType = {
+    INFO: 'info',
+    WARN: 'warn',
+    ERR: 'err'
+};
+// Log function
+function logData(type, msg, streamID, objKey, durationMs, data) {
+    let dataStr = `[${msg}] [${streamID}] [${objKey}] [${durationMs}]`;
+    if (typeof(data) != 'undefined') {
+        dataStr = dataStr + ` ${JSON.stringify(data, null, 2)}`;
+    }
+    if (type === logType.WARN) {
+        console.warn(dataStr);
+    } else if (type === logType.ERR) {
+        console.error(dataStr);
+    }
+    else {
+        console.log(dataStr);
+    }
+}
+
 // Lambda is new
 const lambdaGUID = uuidv4(); 
-console.log('Loading function, ID: ' + lambdaGUID);
+logData(logType.INFO, 'Loading function', '', '', 0, lambdaGUID);
 
 // Entry point
 exports.handler = async (event, context) => {
-    console.log('Received event:', JSON.stringify(event, null, 2));
+    logData(logType.INFO, 'Received event', '', '', 0, event);
 
     context.ffmpegData = ffmpegData;
     context.fontData = fontData;
@@ -102,18 +123,18 @@ exports.handler = async (event, context) => {
     // Fetch config and return it
     const transcoderConfig = new LiveTranscoderConfig()
     await transcoderConfig.loadFromDDB(dbbConfigData.region, dbbConfigData.tableName, dbbConfigData.configName);
-    console.log(`Fetched config ${dbbConfigData.configName} from DDB. Config: ${transcoderConfig.toString()}`)
+    logData(logType.INFO, 'Fetched config', '', '', 0, transcoderConfig.toString());
 
     const ret = [];
     const numRecords = event.Records.length;
     if (numRecords <= 0) {
-        console.log('No records to process')
+        logData(logType.WARN, 'No records to process' , '', '' , 0);
     }
     else {
         for (let r = 0; r < numRecords; r++) {
             // Process one after the other
-            console.log(`Processing record ${r}/${numRecords}`);
-            retRecord = await processRecord(dbbConfigData, event.Records[r], transcoderConfig, context)
+            logData(logType.INFO, 'Processing record', '', '', 0, `${r}/${numRecords}`);
+            retRecord = await processRecord(event.Records[r], transcoderConfig, context)
             ret.push(retRecord);
         }    
     }
@@ -123,11 +144,8 @@ exports.handler = async (event, context) => {
     return event;
 }
 
-async function processRecord(dbbConfigData, record, transcoderConfig, context) {
+async function processRecord(record, transcoderConfig, context) {
     return new Promise( (resolutionFunc, rejectionFunc) => {
-        const bucket = getBucket(record);
-        const objectKey = getObjectKey(record);
-        const localTmpFilePathInput = tempy.file();
         const timers = {
             'start': 0,
             'downloadFromS3': 0,
@@ -137,10 +155,15 @@ async function processRecord(dbbConfigData, record, transcoderConfig, context) {
             'updatedDDB': 0,
             'final': 0
         };
-    
-        console.log(`Downloading from: s3://${bucket}/${objectKey} to ${localTmpFilePathInput}`);
         timers.start = getTimeInMilliseconds();
-    
+
+        const bucket = getBucket(record);
+        const objectKey = getObjectKey(record);
+        const streamID = getStreamIDFromObjectKey(objectKey);
+        const localTmpFilePathInput = tempy.file();
+            
+        logData(logType.INFO, 'Downloading from s3', streamID, objectKey, 0, {s3: `s3://${bucket}/${objectKey}`, dst: localTmpFilePathInput});
+        
         // Object to store transcoding output data
         const abrData = new ABRData(bucket, objectKey, localTmpFilePathInput);
 
@@ -148,7 +171,7 @@ async function processRecord(dbbConfigData, record, transcoderConfig, context) {
         downloadS3Object(bucket, objectKey, localTmpFilePathInput)
         .then(res => {
             timers.downloadFromS3 = getTimeInMilliseconds();
-            console.log(`Downloaded from: s3://${bucket}/${objectKey} to ${localTmpFilePathInput} in ${timers.downloadFromS3 - timers.start}ms`);
+            logData(logType.INFO, 'Downloaded from s3', streamID, objectKey, timers.downloadFromS3 - timers.start, {s3: `s3://${bucket}/${objectKey}`, dst: localTmpFilePathInput});
 
             // Get S3 obj metadata
             return getS3ObjectMetadata(bucket, objectKey);
@@ -157,13 +180,13 @@ async function processRecord(dbbConfigData, record, transcoderConfig, context) {
             abrData.srcS3Metadata = s3ObjMetadata;
           
             timers.getMetadataS3 = getTimeInMilliseconds();
-            console.log(`Got metadata from: s3://${bucket}/${objectKey} in ${timers.getMetadataS3 - timers.downloadFromS3}ms`);
+            logData(logType.INFO, 'Got metadata from s3', streamID, objectKey, timers.getMetadataS3 - timers.downloadFromS3, {s3: `s3://${bucket}/${objectKey}`, dst: localTmpFilePathInput});
 
             // Decide destination bucket (if not configured use source bucket)
             let dstS3Bucket = transcoderConfig.getParamDefault('dstS3Bucket', bucket);
             
             // Create transcoding settings
-            const transcodeData = createTranscodeData(abrData.srcLocalFilePath, transcoderConfig, context);
+            const transcodeData = createTranscodeData(abrData.srcLocalFilePath, transcoderConfig, context, abrData.srcS3Metadata);
             abrData.ffmpegArgs = transcodeData.ffmpegArgs;
             transcodeData.dstFilesData.forEach(dstFileData => {
                 abrData.addRenditionData(dstFileData.dstLocalFilePath, dstS3Bucket, abrData.srcS3ObjectKey, transcoderConfig.getParam('s3OutputPrefix'), dstFileData.rendition);
@@ -176,8 +199,8 @@ async function processRecord(dbbConfigData, record, transcoderConfig, context) {
             timers.localTranscode = getTimeInMilliseconds();
 
             const transcodedLocalFiles = abrData.renditionsData.map(rendition => {return rendition.localFilePath;});
-            console.log(`Locally transcoded from ${abrData.srcLocalFilePath} to ${transcodedLocalFiles.join(',')} in ${timers.localTranscode - timers.downloadFromS3}ms`);
-    
+            logData(logType.INFO, 'Locally transcoded', streamID, objectKey, timers.localTranscode - timers.downloadFromS3, {src: abrData.srcLocalFilePath, dst: transcodedLocalFiles});
+
             // Upload ABR to S3
             let uploadMetadata = {};
             if (transcoderConfig.getParam('copyOriginalMetadataToABRChunks')) {
@@ -190,24 +213,26 @@ async function processRecord(dbbConfigData, record, transcoderConfig, context) {
 
             const transcodedLocalFiles = abrData.renditionsData.map(rendition => {return rendition.localFilePath;});
             const uploadedKeys = abrData.renditionsData.map(rendition => {return rendition.dstS3ObjectKey;});
-            console.log(`Uploaded from ${transcodedLocalFiles.join(',')} to ${uploadedKeys.join(',')}} in ${timers.uploadedToS3 - timers.localTranscode}ms`);
-    
+            logData(logType.INFO, 'Uploaded to S3', streamID, objectKey, timers.uploadedToS3 - timers.localTranscode, {src: transcodedLocalFiles, dst: uploadedKeys});
+
             return ddbUpdateChunks(dbbChunksData, abrData);
         })
         .then(res => {
             timers.updatedDDB = getTimeInMilliseconds();
+            logData(logType.INFO, 'Updated DDB', streamID, objectKey, timers.updatedDDB - timers.uploadedToS3);
 
-            console.log(`Updated DDB in ${timers.updatedDDB - timers.uploadedToS3}ms`);
-    
             // Clean up
             fileCleanupSync(abrData);
     
             timers.final = getTimeInMilliseconds();
-            console.log(`SUCCESS. Processed ${localTmpFilePathInput} in ${timers.final - timers.start}ms`);
+            logData(logType.INFO, 'SUCCEEDED', streamID, objectKey, timers.final - timers.start);
             return resolutionFunc(abrData);
         })
         .catch(err => {
             fileCleanupSync(abrData);
+
+            timers.final = getTimeInMilliseconds();
+            logData(logType.ERR, 'ERROR', streamID, objectKey, timers.final - timers.start);
             return rejectionFunc(err);
         })
     });
@@ -244,7 +269,7 @@ function createDstS3ObjectKey(srcS3ObjectKey, s3ABRPath, renditionID) {
 }
 
 // Creates transcode command args
-function createTranscodeData(srcLocalFilePath, transcoderConfig, context) {
+function createTranscodeData(srcLocalFilePath, transcoderConfig, context, srcS3Metadata) {
     const ffmpegArgs = [];
     const dstFilesData = [];
 
@@ -264,8 +289,18 @@ function createTranscodeData(srcLocalFilePath, transcoderConfig, context) {
         ffmpegOverlayArgs = [];
         if (transcoderConfig.getParam('overlayEncodingData')) {
             const fontPath = getFontPath(context);
-            const overlayString = `Lane ${rendition.width}x${rendition.height}@${rendition.video_h264_preset}-${rendition.video_h264_profile}-${rendition.video_crf}-${Math.floor(rendition.video_maxrate/1024)}Kbps`;
-            ffmpegOverlayArgs = ['-vf', 'drawtext=fontfile=' + fontPath + ':text=\'' + overlayString + '\':x=20:y=100:fontsize=60:fontcolor=pink:box=1:boxcolor=0x00000099'];
+            let overlayString = `Lane ${rendition.width}x${rendition.height}@${rendition.video_h264_preset}-${rendition.video_h264_profile}-${rendition.video_crf}-${Math.floor(rendition.video_maxrate/1024)}Kbps`;
+            let ffmpegOverlayArgStr = 'drawtext=fontfile=' + fontPath + ':text=\'' + overlayString + '\':x=20:y=20:fontsize=60:fontcolor=pink:box=1:boxcolor=0x00000099'
+            
+            if (typeof(srcS3Metadata === 'object') && typeof(srcS3Metadata.Metadata === 'object')) {
+                const seqNum = extractFromMetadataHeader(srcS3Metadata.Metadata, s3MetadataHeaders.SEQ_NUMBER);
+                const wallClockNs = extractFromMetadataHeader(srcS3Metadata.Metadata, s3MetadataHeaders.WALL_CLOCK_NS);
+                const durationMs = extractFromMetadataHeader(srcS3Metadata.Metadata, s3MetadataHeaders.DURATION_MS);
+
+                const overlayStringChunkData = `nSeq ${seqNum}-Dur ${(durationMs / 1000).toFixed(3)}-Ingested at ${new Date(wallClockNs/1000000).toUTCString()}`;
+                ffmpegOverlayArgStr = ffmpegOverlayArgStr + ',' + 'drawtext=fontfile=' + fontPath + ':text=\'' + overlayStringChunkData.replace(/:/g, '') + '\':x=20:y=85:fontsize=60:fontcolor=pink:box=1:boxcolor=0x00000099'
+            }
+            ffmpegOverlayArgs = ['-vf', ffmpegOverlayArgStr];
         }
 
         // Video encoding & scale
@@ -434,32 +469,20 @@ function isLocalDebug(context) {
 }
 
 function getBucket(record) {
-    let ret = '';
-    try {
-        ret = record.s3.bucket.name;
-    }
-    catch(e) {
-        console.error(`ERROR getting bucket name from record ${JSON.stringify(record)}, error: ${e.message}`)
-    }
-    return ret;
+    return record.s3.bucket.name;
 }
 
 function getObjectKey(record) {
-    let ret = '';
-    try {
-        ret = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
-    }
-    catch(e) {
-        console.error(`ERROR getting key from record ${JSON.stringify(record)}, error: ${e.message}`)
-    }
-    return ret;
+    return decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
 }
 
 function execInternalSync(cmd, args, verbose_level) {
     var verbose_level = typeof (verbose_level) !== 'undefined' ? verbose_level : 1;
 
-    if (verbose_level >= 1)
+    // Keeping low level logs not structured
+    if (verbose_level >= 1) {
         console.log(`${cmd} ${args.join(" ")}`);
+    }
 
     const process = child_process.spawnSync(cmd, args);
     if (process == null)

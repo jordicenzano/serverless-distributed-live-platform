@@ -42,7 +42,8 @@ const testEvent = {
     //"streamID":"1"
   },
   "queryStringParameters": {
-    "liveType": "live",
+    "liveType": "event",
+    "latency": "60",
     //"chunksLatency": "-1",
     //"chunksNumber": "1000"
   },

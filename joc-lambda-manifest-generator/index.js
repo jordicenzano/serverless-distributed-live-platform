@@ -25,9 +25,30 @@ const dbbChunksData = {
     tableName: 'joc-dist-live-chunks',
 }
 
+const logType = {
+    INFO: 'info',
+    WARN: 'warn',
+    ERR: 'err'
+};
+// Log function
+function logData(type, msg, streamID, durationMs, data) {
+    let dataStr = `[${msg}] [${streamID}] [${durationMs}]`;
+    if (typeof(data) != 'undefined') {
+        dataStr = dataStr + ` ${JSON.stringify(data, null, 2)}`;
+    }
+    if (type === logType.WARN) {
+        console.warn(dataStr);
+    } else if (type === logType.ERR) {
+        console.error(dataStr);
+    }
+    else {
+        console.log(dataStr);
+    }
+}
+
 // Lambda is new
 const lambdaGUID = uuidv4(); 
-console.log('Loading function, ID: ' + lambdaGUID);
+logData(logType.INFO, 'Loading function', '', 0, lambdaGUID);
 
 const CONTENT_TYPE_M3U8 = 'application/vnd.apple.mpegurl';
 const CONTENT_TYPE_STR = 'text/plain';
@@ -63,7 +84,7 @@ const filterFromManifestToChunklistQS = [
     'fromEpochS', 
     'toEpochS', 
     'liveType'
-]
+];
 
 class HTTPErrorData extends Error {
     constructor(code, message) {
@@ -80,16 +101,21 @@ class HTTPErrorData extends Error {
 
 // Entry point
 exports.handler = async (event, context) => {
-    console.log('Received event:', JSON.stringify(event, null, 2));
-
+    const startMs = getTimeInMilliseconds();
+    let streamID = '';
+    
+    logData(logType.INFO, 'Received event', '', 0, event);
     try {
+        
         // Fetch config and return it
         const transcoderConfig = new LiveTranscoderConfig()
         await transcoderConfig.loadFromDDB(dbbConfigData.region, dbbConfigData.tableName, dbbConfigData.configName);
-        console.log(`Fetched config ${dbbConfigData.configName} from DDB. Config: ${transcoderConfig.toString()}`)
+    
+        logData(logType.INFO, 'Fetched config', '', getTimeInMilliseconds() - startMs, transcoderConfig.toString());
 
         const manifestConfig = getURLData(event, defaultParams);
-        console.log(`Applying following ${JSON.stringify(manifestConfig)}`); 
+        streamID = manifestConfig.streamID;
+        logData(logType.INFO, 'Manifest config from URL', streamID, getTimeInMilliseconds() - startMs, manifestConfig);
 
         // Check if this is manifest or chunklist
         let maxAgeS = MAX_AGE_S_DEF;
@@ -101,16 +127,19 @@ exports.handler = async (event, context) => {
             res = createChunklist(manifestConfig, transcoderConfig, chunks);
             maxAgeS = getTargetDurationMs(chunks) / (2 * 1000);
         }
+        logData(logType.INFO, 'Response 200', streamID, getTimeInMilliseconds() - startMs, res);
+
         return response(context, 200, res, CONTENT_TYPE_M3U8, maxAgeS);
     }
     catch(e) {
-        let errMsg = "Unknown";
+        let errCode = 500;
+        const errMsg = e.message;
         if (e instanceof HTTPErrorData) {
-            return response(context, e.code, e.message, CONTENT_TYPE_STR, MAX_AGE_S_DEF);
+            errCode = e.code;
         }
-        else {
-            return response(context, 500, e.message, CONTENT_TYPE_STR, MAX_AGE_S_DEF);
-        }
+        logData(logType.INFO, `Response ${errCode}`, streamID, getTimeInMilliseconds() - startMs, errMsg);
+
+        return response(context, errCode, errMsg, CONTENT_TYPE_STR, MAX_AGE_S_DEF);
     }
 }
 
@@ -144,7 +173,7 @@ function createChunklist(manifestConfig, transcoderConfig, chunks) {
     const manifestLines = [];
 
     manifestLines.push('#EXTM3U');
-    if (!manifestConfig.liveType === liveType.EVENT) {
+    if (manifestConfig.liveType === liveType.EVENT) {
         manifestLines.push('#EXT-X-PLAYLIST-TYPE:EVENT');
     }
     manifestLines.push('#EXT-X-VERSION:3');
@@ -229,17 +258,15 @@ function getURLData(event, defaultConfig) {
             }
             ret.liveType = event.queryStringParameters.liveType;
         }
-        if (event.queryStringParameters.liveType !== liveType.VOD) {
-            if (checkPresentAndType(event.queryStringParameters, 'chunksNumber', 'string', true)) {
-                ret.chunksNumber = parseInt(event.queryStringParameters.chunksNumber);
-            } 
+        if (checkPresentAndType(event.queryStringParameters, 'chunksNumber', 'string', true)) {
+            ret.chunksNumber = parseInt(event.queryStringParameters.chunksNumber);
         }
-        else {
-            // For VOD there we return all media
+        // For VOD and event there we return all media
+        if ((event.queryStringParameters.liveType === liveType.VOD) || (event.queryStringParameters.liveType === liveType.EVENT)) {
             ret.chunksNumber = -1;
         }
 
-        // Load latency to provide chunklist 
+        // Load latency to provide chunklist
         // Check "latency", if not there use default
         if (checkPresentAndType(event.queryStringParameters, 'latency', 'string', true)) {
             ret.latency = parseInt(event.queryStringParameters.latency, 10);
@@ -248,7 +275,7 @@ function getURLData(event, defaultConfig) {
             ret.chunksLatency = parseInt(event.queryStringParameters.chunksLatency, 10);
         }
 
-        // Load from 
+        // Load from
         if (checkPresentAndType(event.queryStringParameters, 'fromEpochS', 'string', true)) {
             ret.fromEpochS = parseInt(event.queryStringParameters.fromEpochS);
         }
@@ -285,13 +312,13 @@ async function ddbGetChunks(dbbChunksData, manifestConfig) {
     let wcStartEpochSStr = "0";
     let wcEndEpochSStr = "99999999999999999999999999999999999999";
     if (manifestConfig.fromEpochS > 0) {
-        wcStartEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000).toString(); // To ns
+        wcStartEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000 * 1000).toString(); // To ns
     }
     if (manifestConfig.toEpochS > 0) {
-        wcEndEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000).toString(); // To ns
+        wcEndEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000 * 1000).toString(); // To ns
     } else if (manifestConfig.latency > 0) {
-        const nowS = Date.now();
-        wcEndEpochSStr = Math.floor(nowS * 1000 * 1000).toString(); // To ns
+        const limitMs = Date.now() - (manifestConfig.latency * 1000);
+        wcEndEpochSStr = Math.floor(limitMs * 1000 * 1000).toString(); // To ns
     }
     const params = {
         TableName: dbbChunksData.tableName,
@@ -339,4 +366,9 @@ async function ddbGetChunks(dbbChunksData, manifestConfig) {
         }    
     }
     return ret;
+}
+
+function getTimeInMilliseconds() {
+    const hrTime = process.hrtime()
+    return hrTime[0] * 1000 + hrTime[1] / 1000000;
 }
