@@ -21,6 +21,18 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/joc-lambda-manifest-generator/local-test.js"
+        },
+        {
+            "name": "Launch test webpage",
+            "type": "chrome",
+            "request": "launch",
+            "file": "${workspaceFolder}/web-url-generator/index.html"
+        },
+        {
+            "name": "Launch test player",
+            "type": "chrome",
+            "request": "launch",
+            "file": "${workspaceFolder}/web-url-generator/player.html"
         }
     ]
 }

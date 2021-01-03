@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+
+    <title>Playback LDT URL generator</title>
+  </head>
+  <body>
+    <div class="container-fluid">
+        <div class="container">
+            <h1 class="display-4">Live distributed transcoding playback URL generator</h1>
+            <p class="lead">This for will create playback URL for LDT demo</p>
+            <form>
+                <div class="form-group">
+                    <label for="cdnprepend">CDN prepend</label>
+                    <input class="form-control" onkeyup="setUrl()" id="cdnprepend" placeholder="https:://myDomain.com/live"></input>
+                </div>
+                <div class="form-group">
+                    <label for="streamid">Enter stream ID</label>
+                    <input class="form-control" id="streamid" placeholder="YYYYMMDDHHMMSS" onkeyup="setUrl()"></input>
+                </div>
+                <div class="form-group">
+                <label for="manifestType">Select manifest type</label>
+                <select class="form-control" id="manifestType" onchange="setUrl()">
+                    <option value="live">Live</option>
+                    <option value="event">Event (live + rewind)</option>
+                    <option value="vod">Highlight (or VOD)</option>
+                </select>
+                </div>
+                <div class="form-group">
+                    <label for="latency">Backend added latency (to allow distributed transcoding variability)</label>
+                    <div class="input-group">
+                        <input class="form-control" id="latency" value="20" onkeyup="setUrl()"></input>
+                        <div class="input-group-append">
+                            <span class="input-group-text">seconds</span>
+                        </div>    
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="timein">Start highlight time (ISO 8601)</label>
+                    <div class="input-group">
+                        <input id="timein" type="text" class="form-control" onkeyup="setUrl()" placeholder="YYYY-MM-DDTHH:MM:SS.mmmZ" aria-label="Time to start" aria-describedby="button-addon4">
+                        <div class="input-group-append" id="button-addon4">
+                            <button class="btn btn-outline-secondary" type="button" onclick="setInUtcDate()">Set now</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="timeout">End highlight time (ISO 8601)</label>
+                    <div class="input-group">
+                        <input id="timeout" type="text" class="form-control" onkeyup="setUrl()" placeholder="YYYY-MM-DDTHH:MM:SS.mmmZ" aria-label="Time to stop" aria-describedby="button-addon4">
+                        <div class="input-group-append" id="button-addon4">
+                            <button class="btn btn-outline-secondary" type="button" onclick="setOutUtcDate()">Set now</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="container">
+            <h5 class="display-6">Resulting playback URL</h5>
+            <form>
+                <div class="form-group">
+                    <div class="input-group">
+                        <input id="playbackurl" type="text" class="form-control" aria-label="Playback URL" aria-describedby="button-addon4">
+                        <div class="input-group-append" id="button-addon4">
+                            <button class="btn btn-primary" type="button" onclick="copyUrlToClipboard()">Copy</button>
+                            <button class="btn btn-primary" type="button" onclick="playNewTab()">Play new tab</button>
+                        </div>
+                    </div>        
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Optional JavaScript; choose one of the two! -->
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
+
+    <script>
+        function playNewTab() {
+            const url = document.getElementById("playbackurl").value;
+
+            window.open("./player.html?m=" + url);
+        }
+        function copyUrlToClipboard() {
+            const copyText = document.getElementById("playbackurl");
+            copyText.select();
+            document.execCommand("copy");
+        }
+        function setInUtcDate() {
+            document.getElementById("timein").value = new Date().toISOString();
+            setUrl();
+        }
+        function setOutUtcDate() {
+            document.getElementById("timeout").value = new Date().toISOString();
+            setUrl();
+        }
+        function setUrl() {
+            const elUrl = document.getElementById("playbackurl");
+
+            const cdnPrepend = document.getElementById("cdnprepend").value;
+            const streamId = document.getElementById("streamid").value;
+
+            const qs = [];
+            const liveType = document.getElementById("manifestType").value;
+            qs.push("liveType=" + liveType);
+            qs.push("latency=" + document.getElementById("latency").value);
+            if (liveType === 'live') {
+                qs.push("chunksNumber=3");
+            }
+            else if (liveType === 'vod') {
+                const fromMs = Date.parse(document.getElementById("timein").value);
+                const toMs = Date.parse(document.getElementById("timeout").value);
+                qs.push("fromEpochS=" + Math.floor(fromMs/1000));
+                qs.push("toEpochS=" + Math.floor(toMs/1000));
+            }
+            else if (liveType === 'event') {
+                // No extra data (only latency + liveType)
+            }
+            elUrl.value = cdnPrepend + "/" + streamId + "/" + "manifest.m3u8?" + qs.join("&");
+        }
+        </script>        
+  </body>
+</html>

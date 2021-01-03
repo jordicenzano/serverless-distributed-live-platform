@@ -65,17 +65,6 @@ const liveType = {
     EVENT: 'event',
     VOD: 'vod'
 }
-const defaultParams = {
-    latency: 20,// Deliver live edge - X secs (X = max transcoding chunk time)
-    chunksLatency: 0, // Deliver live edge - X chunks
-    chunksNumber: 3, // Deliver # chunks
-    fromEpochS: -1,
-    toEpochS: -1, // Not compatible with chunksNumber
-    liveType: liveType.LIVE,
-    manifestType: manifestType.NONE,
-    renditionID: '',
-    streamID: ''
-}
 
 const filterFromManifestToChunklistQS = [
     'latency',
@@ -101,6 +90,18 @@ class HTTPErrorData extends Error {
 
 // Entry point
 exports.handler = async (event, context) => {
+    const defaultParams = {
+        latency: 20,// Deliver live edge - X secs (X = max transcoding chunk time)
+        chunksLatency: 0, // Deliver live edge - X chunks
+        chunksNumber: 3, // Deliver # chunks
+        fromEpochS: -1,
+        toEpochS: -1, // Not compatible with chunksNumber
+        liveType: liveType.LIVE,
+        manifestType: manifestType.NONE,
+        renditionID: '',
+        streamID: ''
+    }
+
     const startMs = getTimeInMilliseconds();
     let streamID = '';
     
@@ -277,12 +278,12 @@ function getURLData(event, defaultConfig) {
 
         // Load from
         if (checkPresentAndType(event.queryStringParameters, 'fromEpochS', 'string', true)) {
-            ret.fromEpochS = parseInt(event.queryStringParameters.fromEpochS);
+            ret.fromEpochS = parseInt(event.queryStringParameters.fromEpochS, 10);
         }
 
         // Load to (only valid for VOD)
         if ((ret.liveType === liveType.VOD) && (checkPresentAndType(event.queryStringParameters, 'toEpochS', 'string', true))) {
-            ret.toEpochS = parseInt(event.queryStringParameters.toEpochS);
+            ret.toEpochS = parseInt(event.queryStringParameters.toEpochS, 10);
         }
 
         // Check from - to
@@ -315,7 +316,7 @@ async function ddbGetChunks(dbbChunksData, manifestConfig) {
         wcStartEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000 * 1000).toString(); // To ns
     }
     if (manifestConfig.toEpochS > 0) {
-        wcEndEpochSStr = Math.floor(manifestConfig.fromEpochS * 1000 * 1000 * 1000).toString(); // To ns
+        wcEndEpochSStr = Math.floor(manifestConfig.toEpochS * 1000 * 1000 * 1000).toString(); // To ns
     } else if (manifestConfig.latency > 0) {
         const limitMs = Date.now() - (manifestConfig.latency * 1000);
         wcEndEpochSStr = Math.floor(limitMs * 1000 * 1000).toString(); // To ns
