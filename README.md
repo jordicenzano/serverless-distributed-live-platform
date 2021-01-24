@@ -1,30 +1,222 @@
 # Serverless distributed live platform
 
-This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way.
+This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way. This implementation uses [AWS Lambdas](https://aws.amazon.com/lambda/) to perform a segmented serverless transcoding, this allow us to instantly scale to any type of renditions and transcoding settings, tested from 2160p@60fps to 144p (h264 - AAC).
+
+[![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
+TODO: Shot & edit the video
+TODO: Replace image and ID and add PLAY to image
+
+This [player demo page](https://jordicenzano.github.io/serverless-distributed-live-platform/) allows you to simple create playback URLs for this platform, and also includes a player to facilitate testing (based on [VideoJS](https://videojs.com/))
 
 **Disclaimer: This is just a proof of concept, it is not ready / designed to run in production environments**
 
 ## Introduction
+In this section we will compare the common approach of "single host linear live transcoding" vs "distributed live transcoding"
 
-TODO
+### Single host linear live transcoding
 
-## How
-
-TODO: Block diagram
-
-We have a small server at the edge that terminates the [SRT protocol](TODO) and transmuxes the media to [Transport Stream (TS)](TODO), all of these is done with a simple [ffmpeg](TODO) command. 
-
-In the same server the resulting TS is divided in chunks (individually playable) using this open source project [go-ts-segmenter](TODO), and those chunks are uploaded to [S3](TODO). When the upload of each chunk finishes S3 automatically invokes a [Lambda](TODO) function that reads the current config for that stream from [DynamoDB](TODO) and creates the ABR lanes defined in the previous configuration. 
-Finally those transcoded chunks are saved again to S3 and [DynamoDB] updated with the ABR chunks information.
-
-To allow the playback of that live stream we implemented a "minimalist" manifest service inside a Lambda that creates an HLS manifest on the fly based on the info in [DynamoDB](TODO). 
-
-To protect that playback we added a CDN on top of S3 to serve the chunks, and we activated the cache on API GTW to serve the manifests.
+Nowadays for livestreaming the most used architecture is to use single host to create [ABR ladder](https://en.wikipedia.org/wiki/Adaptive_bitrate_streaming) needed for distribution, see figure 2
 
 
-TODO
+![block diagram](./docs/pics/common-concept.png)
+*Figure 2: Single host linear live transcoding concept*
 
-This lambda uses an embedded `ffmpeg` to transcode chunks that are uploaded to S3, in combination with this tool [SSSS]() can create a distributed live transcoder
+This is a simple and good approach, but it some problems: **scalability**, **flexibility**, **reliability**.
+
+#### Scalability problem in linear transcoding 
+
+When we ask the transcoding machine for more that it can handle, the machine starts transcoding **slower tan real time**, and this is a time bomb for live. The player will start stalling, and (depending on the implementation) that machine will OOM or drop data.
+Log story short: Awful user experience
+
+#### Flexibility problem in linear transcoding 
+
+When the stream starts we can evaluate what are the best encoding params for each lane, but after this point it could be quite difficult to re-evaluate those encoding params.
+
+Imagine the situation where we are resource constrained when the stream starts and we decide to apply fast encoding presets (so low quality) to save some CPU capacity, but few minutes after we have a lot of free resources, in this approach is quite difficult to update those encoding params
+
+#### Reliability problem in linear transcoding 
+
+We have one machine managing all the stream transcoding, if this **single** machine goes down, we lose the stream.
+We can always mitigate that risk duplicating the transcoding stage, it can be done but it has some synchronization challenges
+
+### Distributed live transcoding
+
+In this approach the transcoding is performed in small temporal chunks.
+The 1st step is to slice the continuos input stream in small (playable) chunks, then we can send those chunks to stateless transcoders, and finally those transcoders can generate the renditions for each individual chunk. See figure 3
+
+![LDE concept](./docs/pics/lde-concept.png)
+*Figure 3: Distributed live transcoding concept*
+
+### Advantages of distributed live transcoding
+- **Reliability**: If any transcoder machine goes down the stream will not be affected. That chunk is retry-able, or we could double transcode for important streams
+
+- **Scalability**: You do not need to buy bigger machines to use more complex codecs / higher resolution - framerates, just use more of them (horizontal scaling for live transcoding)
+
+- **Flexibility**: You can reevaluate your decisions every few seconds, so you can update (some) encoding settings at any time to meet any criteria
+
+- **Deployability**: You can deploy any transcoding machine at any time without affecting the streams, this ability is "baked" into the architecture
+
+### Problems of distributed live transcoding
+- **Decoder buffer size for VBV**: You will need to manage the decoder buffer size knowing that you will not have the data from previous chunk when you start the encoding
+- **GOP Size**: The transcoding time will be proportional that, so if you are interested in providing some target latency you need to be able to control (limit) the input GOP size. Remember the shortest playable unit is a GOP. Also you need closed GOPs.
+- **Audio priming**: In some audio codecs you need the last samples from previous chunk to be able to properly decode the current chunk audio, see this [post](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html) for more info
+- **Latency**: If you are planning to use encoders / resolution that your transcoding machines can NOT handle in real time (for instance AV1 4K), then you should expect an increased latency. But in this case I think is totally OK, because you can NOT do that in linear approach, now you can totally do it and the price to pay is "just" latency
+
+## Distributed live streaming based on AWS lambdas
+This is what we implemented in this repo
+
+![LDE block diagram](./docs/pics/lde-aws.png)
+*Figure 4: Distributed live streaming based on AWS lambdas*
+
+### Edge EC2 (ingest + slicer)
+![LDE Edge EC2 contents](./docs/pics/lde-edge.png)
+*Figure 5: Distributed live Edge EC2 contents*
+
+- It terminates the [SRT protocol](https://github.com/Haivision/srt) and transmuxes the media to [Transport Stream (TS)](https://en.wikipedia.org/wiki/MPEG_transport_stream), all of these is done with a simple [ffmpeg](https://ffmpeg.org/) command
+
+```bash
+# Start RTMP listener / transmuxer to TS
+ffmpeg -hide_banner -y \
+-i "srt://0.0.0.0:1935?mode=listener" \
+-c:v copy -c:a copy \
+-f mpegts "tcp://localhost:2002"
+```
+
+- Uses this open source project [go-ts-segmenter](https://github.com/jordicenzano/go-ts-segmenter) to slice the input TS and upload the resulting chunks to [S3](https://aws.amazon.com/s3/). In these stage we also add the following info to each chunk in form of HTTP headers
+  - Target suration in ms: `x-amz-meta-joc-hls-targetduration-ms`
+  - Real duration in ms (for regular latency mode): `x-amz-meta-joc-hls-duration-ms`
+  - Epoch time the chunk was created in the slicer in ns: `x-amz-meta-joc-hls-createdat-ns`
+  - Sequence number of that chunk: `x-amz-meta-joc-hls-chunk-seq-number`
+
+### Chunk transcoder lambda
+Every time a chunk is uploaded from ingest to S3, the [joc-lambda-chunk-transcoder](./joc-lambda-chunk-transcoder/index.js) is automatically invoked.
+This lambda contains an `ffmpeg` binary compiled to run inside of AWS Lambda environment
+
+One of the advantages of using Lambdas is that they provide a deterministic execution framework, meaning if we have a problem transcoding chunk N, it is really easy to repro that problem, using the same code version, and input.
+
+![LDE lambda transcoding](./docs/pics/lde-lambda-trans.png)
+*Figure 5: Distributed live lambda transcoding*
+
+This stateless function performs the following actions:
+- Reads the current config for that stream from [DynamoDB](https://aws.amazon.com/dynamodb/), that includes the encoding params, see example of that config:
+```json
+{
+  "config-name": "default",
+  "desc": "4K (7 renditions)",
+  "value": {
+    "copyOriginalContentTypeToABRChunks": true,
+    "copyOriginalMetadataToABRChunks": true,
+    "mediaCdnPrefix": "https://MY-ID.cloudfront.net",
+    "overlayEncodingData": true,
+    "overlayMessage": "Test-",
+    "publicReadToABRChunks": false,
+    "renditions": [
+      {
+        "height": 2160,
+        "ID": "2160p",
+        "video_buffersize": 14000000,
+        "video_crf": 23,
+        "video_h264_bpyramid": "strict",
+        "video_h264_preset": "slow",
+        "video_h264_profile": "high",
+        "video_maxrate": 7000000,
+        "video_x264_params": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0",
+        "width": 3840
+      },
+      ...
+      {
+        "height": 144,
+        "ID": "144p",
+        "video_buffersize": 200000,
+        "video_crf": 23,
+        "video_h264_bpyramid": "strict",
+        "video_h264_preset": "slow",
+        "video_h264_profile": "high",
+        "video_maxrate": 100000,
+        "video_x264_params": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict",
+        "width": 256
+      }
+    ],
+    "s3OutputPrefix": "output/",
+    "video_pix_fmt": "yuv420p"
+  }
+}
+```
+- Applies that config and transcodes the input chunk (the one specified un the [S3 event](https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html))
+
+- It upload the resulting renditions S3, following the read config
+
+- It updates the DynamoDB chunks table with the recently created chunks info, see entry example:
+```json
+{
+  "duration-ms": 2002,
+  "file-path": "20210101222117/144p/source_00131.ts",
+  "first-audio-ts": -1,
+  "first-video-ts": -1,
+  "rendition-id": "144p",
+  "s3bucket": "live-dist-test",
+  "s3objkey": "output/20210101222117/144p/source_00131.ts",
+  "seq-number": 131,
+  "stream-id": "20210101222117",
+  "target-duration-ms": 2000,
+  "uid": "0ef4a832-5c83-4c70-bf92-bdcdf6305e4e",
+  "wallclock-epoch-ns": 1609539942573507463
+}
+``` 
+
+### Manifest generator lambda
+To allow the playback of that live stream we implemented a "minimalist" manifest service inside a Lambda that creates an HLS manifest on the fly based on the info in DynamoDB.
+
+This function is invoked when a players asks for a manifest, so when a player `GET` a URL like this:
+
+```
+https://CDN-PREPEND/video/streamId/manifest.m3u8?SEE-QS-POSSIBILITIES
+```
+OR
+```
+https://CDN-PREPEND/video/streamId/renditionID/chunklist.m3u8?SEE-QS-POSSIBILITIES
+```
+
+Valid querystring (QS) parameters are:
+- `liveType`: Indicates what manifest we want (`live`, `event`, `vod`)
+  - **This param allows you to create (chunk accurate) highlights before live ends (`vod`), or activate live rewind (`event`)**
+- `chunksNumber`: Indicate how many chunks we want in the response
+  - Only valid if `liveType == live`
+- `latency`: Indicate how many seconds of latency you want to add.
+  - This is recommended to be equal or bigger to the last possible transcoding time for your longer chunk
+- `chunksLatency`: Indicate how many chunk of latency you want to add.
+  - This is recommended to be equal or bigger to the last possible transcoding time for your longer chunk
+  - If you set `latency` takes precedence over this
+- `fromEpochS`: epoch time in seconds to start getting chunks
+- `toEpochS`: epoch time in seconds to stop getting chunks
+  - Only valid if `liveType == vod`
+  - **Very useful to create VOD highlights from an ongoing live stream**, in combination with `fromEpochS`
+
+![LDE lambda manifest](./docs/pics/lde-lambda-manifest.png)
+*Figure 6: Distributed live lambda manifest*
+
+- For the `manifest.m3u8` this Lambda
+  - Gets stream config from DynamoDB and returns the chunklists copying the QS params
+- For the `chunklist.m3u8`
+  - Reads the `streamId`, `renditionId`, and QS params
+  - Creates a query to DynamoDB
+  - Generated a valid [HLS](https://tools.ietf.org/html/draft-pantos-http-live-streaming-23) manifest based in the query results
+  - API Gateway caches that result (cache key included QS)
+
+### CDN + API Gateway cache
+To isolate our backend from the number of players we added a CDN that is used to serve the chunks.
+
+#### Chunks
+We added a Cloudfront file distribution with origin shield activated on top of the S3
+- TTL: Could be very large, they are NOT mutable, and they are the same for VOD (highlights) and LIVE
+- Cache key: It is the URL path
+
+#### Manifests
+We we also activated the cache on [API Gateway](https://aws.amazon.com/api-gateway/) to serve the manifests.
+- TTL: We used short TTL because `chunklists.m3u8` is updated every `TARGET-DURATION`
+- Cache key: It is the URL path AND the querystring parameters
+
+TODO: From here
 
 # Challenges
 - S3 no real time
@@ -33,6 +225,8 @@ This lambda uses an embedded `ffmpeg` to transcode chunks that are uploaded to S
 
 # Set up the environment
 This script will do it for you assuming you have [AWS CLI] installed and configured properly in your system
+
+TODO
 
 ```
 set-up-aws.sh
@@ -86,5 +280,5 @@ scp -i ~/.ssh/KEY.pem test.mp4 ec2-user@IP:/home/ec2-user/test.mp4
   - Example: OBS for desktop, Larix for mobile
 
 
-# TODO
+# TODOs
 - Create a cloudformation template for AWS infrastructure
