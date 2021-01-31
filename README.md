@@ -1,6 +1,6 @@
 # Serverless distributed live platform
 
-This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way. This implementation uses [AWS Lambdas](https://aws.amazon.com/lambda/) to perform a segmented serverless transcoding, this allow us to instantly scale to any type of renditions and transcoding settings, tested from 2160p@60fps to 144p (h264 - AAC).
+This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way. This implementation uses [AWS Lambdas](https://aws.amazon.com/lambda/) to perform a segmented serverless transcoding, this allow us to instantly scale to any type of renditions and transcoding settings, tested up to 2160p@60fps (h264 - AAC).
 
 [![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
 TODO: Shot & edit the video
@@ -11,7 +11,7 @@ This [player demo page](https://jordicenzano.github.io/serverless-distributed-li
 **Disclaimer: This is just a proof of concept, it is not ready / designed to run in production environments**
 
 ## Introduction
-In this section we will compare the common approach of "single host linear live transcoding" vs "distributed live transcoding"
+In this section we will compare the common approach of "single host linear live transcoding" vs the one presented in this repo "distributed live transcoding"
 
 ### Single host linear live transcoding
 
@@ -47,7 +47,7 @@ The 1st step is to slice the continuos input stream in small (playable) chunks, 
 ![LDE concept](./docs/pics/lde-concept.png)
 *Figure 3: Distributed live transcoding concept*
 
-### Advantages of distributed live transcoding
+#### Advantages of distributed live transcoding
 - **Reliability**: If any transcoder machine goes down the stream will not be affected. That chunk is retry-able, or we could double transcode for important streams
 
 - **Scalability**: You do not need to buy bigger machines to use more complex codecs / higher resolution - framerates, just use more of them (horizontal scaling for live transcoding)
@@ -56,7 +56,7 @@ The 1st step is to slice the continuos input stream in small (playable) chunks, 
 
 - **Deployability**: You can deploy any transcoding machine at any time without affecting the streams, this ability is "baked" into the architecture
 
-### Problems of distributed live transcoding
+#### Problems of distributed live transcoding
 - **Decoder buffer size for VBV**: You will need to manage the decoder buffer size knowing that you will not have the data from previous chunk when you start the encoding
 - **GOP Size**: The transcoding time will be proportional that, so if you are interested in providing some target latency you need to be able to control (limit) the input GOP size. Remember the shortest playable unit is a GOP. Also you need closed GOPs.
 - **Audio priming**: In some audio codecs you need the last samples from previous chunk to be able to properly decode the current chunk audio, see this [post](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html) for more info
@@ -120,7 +120,6 @@ This stateless function performs the following actions:
         "video_h264_preset": "slow",
         "video_h264_profile": "high",
         "video_maxrate": 7000000,
-        "video_x264_params": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0",
         "width": 3840
       },
       ...
@@ -133,7 +132,6 @@ This stateless function performs the following actions:
         "video_h264_preset": "slow",
         "video_h264_profile": "high",
         "video_maxrate": 100000,
-        "video_x264_params": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict",
         "width": 256
       }
     ],
@@ -216,12 +214,65 @@ We we also activated the cache on [API Gateway](https://aws.amazon.com/api-gatew
 - TTL: We used short TTL because `chunklists.m3u8` is updated every `TARGET-DURATION`
 - Cache key: It is the URL path AND the querystring parameters
 
-TODO: From here
+### Some metrics
 
-# Challenges
-- S3 no real time
-- Rate encodere
-- Audio priming
+After proving the system works we gathered few basic metrics, for that we used 2 types of the streams:
+
+- HM: High motion stream, it is a professionally produced sports VOD stream (that we transformed in a live stream using transmuxing and loop)
+  - 2160p@59.94 20Mbps h264-AAC, 2s GOP
+- LM: Low motion stream, generated from IPhone Xs with [Larix](https://softvelum.com/larix/) app
+  - 2160p@30 12Mbps h264-AAC, 2s GOP
+  - 1080p@30 12Mbps h264-AAC, 2s GOP
+
+For the following test we have used:
+- Lambda RAM: **10240MB (CPU highest)**
+  - Cost per ms: $0.0000001667
+- Segmenter chunk size: **2s**
+- Encoding presets:
+  - SL7R:
+    - 7 renditions: 2160p, 1080p, 720p, 480p, 360p, 240p, 144p
+    - h264 High, preset SLOW 
+  - VF7R:
+    - 7 renditions: 2160p, 1080p, 720p, 480p, 360p, 240p, 144p
+    - h264 High, preset VERYFAST 
+  - SL6R:
+    - 6 renditions: 1080p, 720p, 480p, 360p, 240p, 144p
+    - h264 High, preset SLOW 
+
+In the following table you can see the avg and max execution time in ms.
+
+Remember Lambdas are billed by execution time, so we can easily calculate the CPU transcoding cost from those values and segmenter chunk size:
+
+Number of lambdas invoked per hour = 3600/ChunkSize
+
+| Video    | Enc preset | Avg (ms) | Max (ms) | Transc. latency (s) | Transc. cost per 1h |
+| -------- |:----------:| --------:|---------:| -------------------:|--------------------:|
+| LM 1080p | SL6R       | 4000     | 5000     |               **5** |            **$1.2** |
+| LM 4K    | SL7R       | 11000    | 14109    |              **15** |            **$3.3** |
+| HM 4K    | VF7R       | 14741    | 19828    |              **20** |            **$4.4** |
+| HM 4K    | SL7R       | 20000    | 32721    |              **33** |            **$6.0** |
+
+#### Metrics takeaways
+- **Transcoding latency (Content dependency)**: In linear transcoders we were used to have a deterministic latency, probably around 1 GOP, here we add another variable that is the source content complexity, and that is usually out of our control.
+
+- **Latency knob (Latency vs Quality)**: This system offers us the ability to reduce the induced transcoding latency decreasing the video quality (faster presets), and we can do that mid-stream
+
+- **Cost knob (Cost vs Quality)**: The transcoding time is our cost, so that means if we want more quality we just need to apply slower presets, then latency will go up and our cost too. 
+The same works the other way, if we want to pay less just apply faster preset, then cost, quality, and latency will go.
+
+Note: For those takeaways we assumed the machine type (lambda type) is fixed, but in reality that is another know (machine size vs latency)
+
+# Learnings and Challenges
+- Encoder rate - control
+  - The next chunk N does NOT know about previous one (N-1), then we need to apply some constraints on the encoder rate - control algorithm to make sure the decoding buffer size is under control
+- Variable scene complexity
+  - Scenes with different complexity would need different encoding times, in this approach we need predictable (or limited) encoding time
+- Variable input GOP size
+  - Variable input GOP size is huge problem for this approach, since chunk transcoding times should be predictable (or limited) 
+- Audio Priming
+  - To properly decode audio, in some codecs we need samples from the previous chunks, see more info [here](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html)
+
+TODO: From here
 
 # Set up the environment
 This script will do it for you assuming you have [AWS CLI] installed and configured properly in your system
