@@ -277,12 +277,13 @@ The same works the other way, if we want to pay less just apply faster preset, t
 This part will help you to set up your AWS account to test this code.
 We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and configured properly in your system
 
+- [Set up edge machine](./docs/setup-edge.md)
+
 TODO
 
-- [Set up edge machine](./docs/setup-edge.md)
 - [Set up S3 bucket]()
-- [Set up Lambda]()
-- [Set up manifest Lambda]()
+- [Give EC2 RW permissions to your S3]()
+- [Set up Lambdas(remember permissions and trigger)]()
 - [Set up dynamoDB]()
 - [Set up API Gateway]()
 - [Set up CloudFront]()
@@ -292,56 +293,6 @@ This video will show you how to do some initial tests
 
 [![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
 TODO: Record the video
-
-
-
-
-Edge
-
-- Install `ffmpeg` in EC2
-```
-sudo yum -y install git
-git clone https://github.com/jordicenzano/ffmpeg-compile-centos-amazon-linux.git
-cd ffmpeg-compile-centos-amazon-linux
-./compile-ffmpeg.sh
-```
-
-- Install [tmux](TODO) (always useful)
-```
-sudo yum install -y tmux
-```
-
-- Install go
-```
-sudo yum install -y golang
-```
-
-- Install & Compile `go-ts-segmenter`
-```
-cd ~
-go get github.com/jordicenzano/go-ts-segmenter
-cd go/src/github.com/jordicenzano/go-ts-segmenter
-go get
-
-```
-
-- Upload some test media (optional)
-```
-scp -i ~/.ssh/KEY.pem test.mp4 ec2-user@IP:/home/ec2-user/test.mp4
-```
-
-- Test with internal file
-```
-./transmuxed-file-to-s3.sh ~/media/test.mp4 S3BUCKET S3REGION
-```
-
-- Test with srt
-```
-./transmuxed-srt-to-s3.sh live-dist-test us-east-1
-```
-- Use SRT client to stream to this server. Configure video codec = h264 and audio = AAC
-  - Example: OBS for desktop, Larix for mobile
-
 
 # TODOs
 - Create a cloudformation template for AWS infrastructure
