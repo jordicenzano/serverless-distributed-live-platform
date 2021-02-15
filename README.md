@@ -2,9 +2,7 @@
 
 This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way. This implementation uses [AWS Lambdas](https://aws.amazon.com/lambda/) to perform a segmented serverless transcoding, this allow us to instantly scale to any type of renditions and transcoding settings, tested up to 2160p@60fps (h264 - AAC).
 
-[![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
-TODO: Shot & edit the video
-TODO: Replace image and ID and add PLAY to image
+[![How it works video](https://img.youtube.com/vi/f7TkdI4f3jU/0.jpg)](https://youtu.be/f7TkdI4f3jU)
 
 This [player demo page](https://jordicenzano.github.io/serverless-distributed-live-platform/) allows you to simple create playback URLs for this platform, and also includes a player to facilitate testing (based on [VideoJS](https://videojs.com/))
 
@@ -216,51 +214,54 @@ We we also activated the cache on [API Gateway](https://aws.amazon.com/api-gatew
 
 ### Some metrics
 
-After proving the system works we gathered few basic metrics, for that we used 2 types of the streams:
+After proving the system works we gathered few basic metrics, for that we used 2 types of live streams:
 
-- HM: High motion stream, it is a professionally produced sports VOD stream (that we transformed in a live stream using transmuxing and loop)
+- **HM**: High motion stream, it is a professionally produced sports VOD stream (that we transformed in a live stream using transmuxing and loop)
   - 2160p@59.94 20Mbps h264-AAC, 2s GOP
-- LM: Low motion stream, generated from IPhone Xs with [Larix](https://softvelum.com/larix/) app
+- **LM**: Low motion stream, generated from IPhone Xs with [Larix](https://softvelum.com/larix/) app
   - 2160p@30 12Mbps h264-AAC, 2s GOP
   - 1080p@30 12Mbps h264-AAC, 2s GOP
 
 For the following test we have used:
-- Lambda RAM: **10240MB (CPU highest)**
+- Lambda RAM: **10240MB (highest CPU)**
   - Cost per ms: $0.0000001667
 - Segmenter chunk size: **2s**
 - Encoding presets:
-  - SL7R:
+  - **SL7R**:
     - 7 renditions: 2160p, 1080p, 720p, 480p, 360p, 240p, 144p
     - h264 High, preset SLOW 
-  - VF7R:
+  - **VF7R**:
     - 7 renditions: 2160p, 1080p, 720p, 480p, 360p, 240p, 144p
     - h264 High, preset VERYFAST 
-  - SL6R:
+  - **SL6R**:
     - 6 renditions: 1080p, 720p, 480p, 360p, 240p, 144p
     - h264 High, preset SLOW 
 
-In the following table you can see the avg and max execution time in ms.
+In the following table you can see the avg and max transcoding Lambda execution time in ms.
 
-Remember Lambdas are billed by execution time, so we can easily calculate the CPU transcoding cost from those values and segmenter chunk size:
+*Remember Lambdas are billed by execution time, so we can easily calculate the CPU transcoding cost from those values and segmenter chunk size:
+Number of lambdas invoked per hour = 3600/ChunkSize*
 
-Number of lambdas invoked per hour = 3600/ChunkSize
-
-| Video    | Enc preset | Avg (ms) | Max (ms) | Transc. latency (s) | Transc. cost per 1h |
+| Video    | Enc preset | Exec. time Avg (ms) | Exec. time Max (ms) | Transc. latency (s) | Transc. cost per 1h |
 | -------- |:----------:| --------:|---------:| -------------------:|--------------------:|
 | LM 1080p | SL6R       | 4000     | 5000     |               **5** |            **$1.2** |
 | LM 4K    | SL7R       | 11000    | 14109    |              **15** |            **$3.3** |
 | HM 4K    | VF7R       | 14741    | 19828    |              **20** |            **$4.4** |
 | HM 4K    | SL7R       | 20000    | 32721    |              **33** |            **$6.0** |
 
+Note: Cost calculated based on:
+  - Lambda 10240MB (max CPU) and price at 2021/02/15 in VA: $0.0000001667/ms
+  - 2s chunk size -> 1800 invokes/hour
+
 #### Metrics takeaways
-- **Transcoding latency (Content dependency)**: In linear transcoders we were used to have a deterministic latency, probably around 1 GOP, here we add another variable that is the source content complexity, and that is usually out of our control.
+- **Transcoding latency (Content dependency)**: In linear transcoders we are used to have a deterministic latency, probably around 1 GOP. Now we are adding another variable that is the source content complexity, and that is usually out of our control.
 
 - **Latency knob (Latency vs Quality)**: This system offers us the ability to reduce the induced transcoding latency decreasing the video quality (faster presets), and we can do that mid-stream
 
 - **Cost knob (Cost vs Quality)**: The transcoding time is our cost, so that means if we want more quality we just need to apply slower presets, then latency will go up and our cost too. 
-The same works the other way, if we want to pay less just apply faster preset, then cost, quality, and latency will go.
+The same works the other way, if we want to pay less just apply faster preset, then cost, quality, and latency will go down.
 
-Note: For those takeaways we assumed the machine type (lambda type) is fixed, but in reality that is another know (machine size vs latency)
+*Note: For those takeaways we assumed the machine type (lambda type) is fixed, but in reality that is another know (machine size vs latency)*
 
 # Learnings and Challenges
 - Encoder rate - control
@@ -272,12 +273,26 @@ Note: For those takeaways we assumed the machine type (lambda type) is fixed, bu
 - Audio Priming
   - To properly decode audio, in some codecs we need samples from the previous chunks, see more info [here](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html)
 
-TODO: From here
-
 # Set up the environment
-This script will do it for you assuming you have [AWS CLI] installed and configured properly in your system
+This part will help you to set up your AWS account to test this code.
+We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and configured properly in your system
 
 TODO
+
+- [Set up edge machine]()
+- [Set up S3 bucket]()
+- [Set up transcoding Lambda]()
+- [Set up manifest Lambda]()
+- [Set up dynamoDB]()
+- [Set up API Gateway]()
+- [Set up CloudFront]()
+
+# Test
+This video will show you how to do some initial tests
+
+[![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
+TODO: Record the video
+
 
 ```
 set-up-aws.sh
