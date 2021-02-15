@@ -2,7 +2,7 @@
 
 This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way. This implementation uses [AWS Lambdas](https://aws.amazon.com/lambda/) to perform a segmented serverless transcoding, this allow us to instantly scale to any type of renditions and transcoding settings, tested up to 2160p@60fps (h264 - AAC).
 
-[![How it works video](https://img.youtube.com/vi/f7TkdI4f3jU/0.jpg)](https://youtu.be/f7TkdI4f3jU)
+[![How it works video](/docs/pics/LDE-demo-intro.jpg)](https://youtu.be/f7TkdI4f3jU)
 
 This [player demo page](https://jordicenzano.github.io/serverless-distributed-live-platform/) allows you to simple create playback URLs for this platform, and also includes a player to facilitate testing (based on [VideoJS](https://videojs.com/))
 
