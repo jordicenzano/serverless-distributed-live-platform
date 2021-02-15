@@ -279,9 +279,9 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 
 TODO
 
-- [Set up edge machine]()
+- [Set up edge machine](./docs/setup-edge.md)
 - [Set up S3 bucket]()
-- [Set up transcoding Lambda]()
+- [Set up Lambda]()
 - [Set up manifest Lambda]()
 - [Set up dynamoDB]()
 - [Set up API Gateway]()
@@ -294,9 +294,6 @@ This video will show you how to do some initial tests
 TODO: Record the video
 
 
-```
-set-up-aws.sh
-```
 
 
 Edge
