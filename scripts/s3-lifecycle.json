@@ -1,0 +1,15 @@
+{
+    "Rules": [
+        {
+            "ID": "delete-older-files-2d",
+            "Expiration": {
+                "Days": 2
+            },
+            "Filter": {},
+            "Status": "Enabled",
+            "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 2
+            }
+        }
+    ]
+}
