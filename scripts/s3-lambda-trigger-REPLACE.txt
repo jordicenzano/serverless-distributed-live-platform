@@ -1,0 +1,24 @@
+{
+    "LambdaFunctionConfigurations": [
+        {
+            "LambdaFunctionArn": "<<ARN-LAMBDA-CHUNK-TRANSCODER>>",
+            "Events": [
+                "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+                "Key": {
+                    "FilterRules": [
+                        {
+                            "Name": "Prefix",
+                            "Value": "ingest/"
+                        },
+                        {
+                            "Name": "Suffix",
+                            "Value": ".ts"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
