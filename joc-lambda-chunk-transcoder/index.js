@@ -122,7 +122,7 @@ exports.handler = async (event, context) => {
 
     // Update DDB configs
     const dbbConfigData = parseDDBConfig(process.env, dbbConfigDataDefault);
-    const dbbChunksData = parseDDBChunks(aaa, dbbChunksDataDefault);
+    const dbbChunksData = parseDDBChunks(process.env, dbbChunksDataDefault);
 
     // Fetch config and return it
     const transcoderConfig = new LiveTranscoderConfig()
@@ -435,7 +435,7 @@ function parseDDBConfig(envVars, defaultDBBConfig) {
         ret.tableName = envVars.DDB_CONFIG_TABLE_NAME;
     }
 
-    console.log(`Dynamo table config data: ${json.stringify(ret)}`);
+    console.log(`Dynamo table config data: ${JSON.stringify(ret)}`);
 
     return ret;
 }
@@ -449,7 +449,7 @@ function parseDDBChunks(envVars, defaultDBBChunks) {
         ret.tableName = envVars.DDB_CONFIG_TABLE_CHUNKS;
     }
 
-    console.log(`Dynamo table chunks data: ${json.stringify(ret)}`);
+    console.log(`Dynamo table chunks data: ${JSON.stringify(ret)}`);
 
     return ret;
 }

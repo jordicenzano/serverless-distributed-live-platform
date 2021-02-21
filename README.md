@@ -277,6 +277,8 @@ The same works the other way, if we want to pay less just apply faster preset, t
 This part will help you to set up your AWS account to test this code.
 We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and configured properly in your system
 
+*Note: Please follow the order below, there are some dependencies on those steps*
+
 - [Set up edge machine](./docs/setup-edge.md)
 - [Set up S3 bucket](./docs/setup-s3.md)
 - [Give EC2 RW permissions to your S3](./docs/grant-s3-full-access-to-ec2.md)
@@ -295,4 +297,4 @@ This video will show you how to do some initial tests
 TODO: Record the video
 
 # TODOs
-- Create a cloudformation template for AWS infrastructure. Or create a simple AWS CLI script
+- Create a cloudformation template for AWS infrastructure. Or create a simple and better AWS CLI script

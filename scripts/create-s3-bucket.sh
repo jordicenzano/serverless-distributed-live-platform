@@ -15,4 +15,7 @@ else
 fi
 
 echo "Setting S3 bucket lifecycle"
-aws $AWS_FLAGS_JSON --region $AWS_REGION s3api put-bucket-lifecycle-configuration --bucket $S3_BUCKET_NAME --lifecycle-configuration file://../config/s3-lifecycle.json 
+aws $AWS_FLAGS_JSON --region $AWS_REGION s3api put-bucket-lifecycle-configuration --bucket $S3_BUCKET_NAME --lifecycle-configuration file://../config/s3-lifecycle.json
+
+echo "Blocking public access"
+aws $AWS_FLAGS_JSON --region $AWS_REGION s3api put-public-access-block --bucket $S3_BUCKET_NAME --public-access-block-configuration file://../config/s3-public-access.json

@@ -9,7 +9,7 @@ const LiveTranscoderConfig = require('./live-transcoder-config');
 
 const DDB_MAX_RETRIES_DEF = 3;
 
-const dbbConfigData = {
+const dbbConfigDataDefault = {
     // General 
     region: 'us-east-1',
     
@@ -17,7 +17,7 @@ const dbbConfigData = {
     configName: 'default',
     tableName: 'joc-dist-live-config',
 }
-const dbbChunksData = {
+const dbbChunksDataDefault = {
     // General 
     region: 'us-east-1',
 
@@ -30,6 +30,7 @@ const logType = {
     WARN: 'warn',
     ERR: 'err'
 };
+
 // Log function
 function logData(type, msg, streamID, durationMs, data) {
     let dataStr = `[${msg}] [${streamID}] [${durationMs}]`;
@@ -90,6 +91,10 @@ class HTTPErrorData extends Error {
 
 // Entry point
 exports.handler = async (event, context) => {
+    // Update DDB configs
+    const dbbConfigData = parseDDBConfig(process.env, dbbConfigDataDefault);
+    const dbbChunksData = parseDDBChunks(process.env, dbbChunksDataDefault);
+
     const defaultParams = {
         latency: 20,// Deliver live edge - X secs (X = max transcoding chunk time)
         chunksLatency: 0, // Deliver live edge - X chunks
@@ -232,6 +237,7 @@ function createQSForChunklist(manifestConfig) {
     }  
     return querystring.stringify(filteredQS);
 }
+
 function getURLData(event, defaultConfig) {
     const ret = defaultConfig;
    
@@ -291,6 +297,36 @@ function getURLData(event, defaultConfig) {
             throw new HTTPErrorData(400, 'toEpochS can not be equal or lower than fromEpochS');
         }
     }
+    return ret;
+}
+
+// Helpers
+
+function parseDDBConfig(envVars, defaultDBBConfig) {
+    ret = defaultDBBConfig;
+    if ((typeof(envVars.AWS_REGION) === 'string') && (envVars.AWS_REGION != "")) {
+        ret.region = envVars.AWS_REGION;
+    }
+    if ((typeof(envVars.DDB_CONFIG_TABLE_NAME) === 'string') && (envVars.DDB_CONFIG_TABLE_NAME != "")) {
+        ret.tableName = envVars.DDB_CONFIG_TABLE_NAME;
+    }
+
+    console.log(`Dynamo table config data: ${JSON.stringify(ret)}`);
+
+    return ret;
+}
+
+function parseDDBChunks(envVars, defaultDBBChunks) {
+    ret = defaultDBBChunks;
+    if ((typeof(envVars.AWS_REGION) === 'string') && (envVars.AWS_REGION != "")) {
+        ret.region = envVars.AWS_REGION;
+    }
+    if ((typeof(envVars.DDB_CONFIG_TABLE_CHUNKS) === 'string') && (envVars.DDB_CONFIG_TABLE_CHUNKS != "")) {
+        ret.tableName = envVars.DDB_CONFIG_TABLE_CHUNKS;
+    }
+
+    console.log(`Dynamo table chunks data: ${JSON.stringify(ret)}`);
+
     return ret;
 }
 
