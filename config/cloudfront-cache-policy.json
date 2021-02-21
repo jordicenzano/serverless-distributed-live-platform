@@ -1,0 +1,20 @@
+{
+    "Comment": "HLS, uses path + QS for cache key",
+    "Name": "lde-HLS-ALL-QS",
+    "DefaultTTL": 86400,
+    "MaxTTL": 31536000,
+    "MinTTL": 1,
+    "ParametersInCacheKeyAndForwardedToOrigin": {
+        "EnableAcceptEncodingGzip": true,
+        "EnableAcceptEncodingBrotli": true,
+        "HeadersConfig": {
+            "HeaderBehavior": "none"
+        },
+        "CookiesConfig": {
+            "CookieBehavior": "none"
+        },
+        "QueryStringsConfig": {
+            "QueryStringBehavior": "all"
+        }
+    }
+}

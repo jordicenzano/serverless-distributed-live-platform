@@ -1,0 +1,21 @@
+{
+    "Comment": "Policy for S3 origin with CORS",
+    "Name": "lde-S3Origin",
+    "HeadersConfig": {
+        "HeaderBehavior": "whitelist",
+        "Headers": {
+            "Quantity": 3,
+            "Items": [
+                "origin",
+                "access-control-request-headers",
+                "access-control-request-method"
+            ]
+        }
+    },
+    "CookiesConfig": {
+        "CookieBehavior": "none"
+    },
+    "QueryStringsConfig": {
+        "QueryStringBehavior": "none"
+    }
+}

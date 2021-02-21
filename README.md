@@ -280,13 +280,13 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 - [Set up edge machine](./docs/setup-edge.md)
 - [Set up S3 bucket](./docs/setup-s3.md)
 - [Give EC2 RW permissions to your S3](./docs/grant-s3-full-access-to-ec2.md)
-- [Set up dynamoDB](./docs/../scripts/create-ddb.sh)
 - [Set up Lambdas(create execution roles, lambdas, and upload code)](./docs/setup-lambdas.md)
 - [Set up transcode lambda trigger to new ingest files](./docs/setup-lambda-transcode-trigger.md)
+- [Set up CloudFront as media CDN](./docs/create-cloudfront.md)
+- [Set up and populate dynamoDB](./docs/setup-ddb.md)
 
 //TODO
 - [Set up API Gateway (and manifest lambda trigger)]()
-- [Set up CloudFront]()
 
 # Test
 This video will show you how to do some initial tests

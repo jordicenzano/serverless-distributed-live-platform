@@ -8,17 +8,17 @@ set -e
 
 # Create role
 echo "Creating role $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER in $AWS_REGION"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam create-role --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --assume-role-policy-document file://lambda-role-trust-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam create-role --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --assume-role-policy-document file://../config/lambda-role-trust-policy.json
 
 # Add policies to role
 echo "Adding policy $IAM_POLICY_S3_FULL_ACCESS to role $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --policy-name $IAM_POLICY_S3_FULL_ACCESS --policy-document file://s3-full-access-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --policy-name $IAM_POLICY_S3_FULL_ACCESS --policy-document file://../config/s3-full-access-policy.json
 
 echo "Adding policy $IAM_POLICY_DDB_FULL_ACCESS to role $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --policy-name $IAM_POLICY_DDB_FULL_ACCESS --policy-document file://ddb-full-access-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --policy-name $IAM_POLICY_DDB_FULL_ACCESS --policy-document file://../config/ddb-full-access-policy.json
 
 echo "Adding policy $IAM_POLICY_LAMBDA_LOGS to role $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --policy-name $IAM_POLICY_LAMBDA_LOGS --policy-document file://cloudwatch-lambda-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --policy-name $IAM_POLICY_LAMBDA_LOGS --policy-document file://../config/cloudwatch-lambda-policy.json
 
 # Get role ARN
 ARN_IAM_LAMBDA_ROLE_CHUNK_TRANSCODER=$(aws $AWS_FLAGS_TEXT iam get-role --role-name $IAM_LAMBDA_ROLE_CHUNK_TRANSCODER --query 'Role.Arn')

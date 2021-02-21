@@ -1,0 +1,107 @@
+{
+    "DistributionConfig": {
+        "CallerReference": "20210221211400",
+        "Aliases": {
+            "Quantity": 0
+        },
+        "DefaultRootObject": "",
+        "Origins": {
+            "Quantity": 1,
+            "Items": [
+                {
+                    "Id": "S3-MediaOutput",
+                    "DomainName": "<<S3-BUCKET-NAME>>.s3.amazonaws.com",
+                    "OriginPath": "/output",
+                    "CustomHeaders": {
+                        "Quantity": 0
+                    },
+                    "S3OriginConfig": {
+                        "OriginAccessIdentity": "origin-access-identity/cloudfront/<<CF-ORIGIN-ACCESS-IDENTITY>>"
+                    },
+                    "ConnectionAttempts": 3,
+                    "ConnectionTimeout": 10,
+                    "OriginShield": {
+                        "Enabled": true,
+                        "OriginShieldRegion": "<<CF-ORIGIN-SHIELD-REGION>>"
+                    }
+                }
+            ]
+        },
+        "OriginGroups": {
+            "Quantity": 0
+        },
+        "DefaultCacheBehavior": {
+            "TargetOriginId": "S3-MediaOutput",
+            "TrustedSigners": {
+                "Enabled": false,
+                "Quantity": 0
+            },
+            "TrustedKeyGroups": {
+                "Enabled": false,
+                "Quantity": 0
+            },
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "AllowedMethods": {
+                "Quantity": 3,
+                "Items": [
+                    "HEAD",
+                    "GET",
+                    "OPTIONS"
+                ],
+                "CachedMethods": {
+                    "Quantity": 3,
+                    "Items": [
+                        "HEAD",
+                        "GET",
+                        "OPTIONS"
+                    ]
+                }
+            },
+            "SmoothStreaming": false,
+            "Compress": false,
+            "LambdaFunctionAssociations": {
+                "Quantity": 0
+            },
+            "FieldLevelEncryptionId": "",
+            "CachePolicyId": "<<CF-HLS-CACHE-POLICY-ID>>",
+            "OriginRequestPolicyId": "<<CF-ORIGIN-REQUEST-POLICY-ID>>"
+        },
+        "CacheBehaviors": {
+            "Quantity": 0
+        },
+        "CustomErrorResponses": {
+            "Quantity": 0
+        },
+        "Comment": "",
+        "Logging": {
+            "Enabled": false,
+            "IncludeCookies": false,
+            "Bucket": "",
+            "Prefix": ""
+        },
+        "PriceClass": "PriceClass_All",
+        "Enabled": true,
+        "ViewerCertificate": {
+            "CloudFrontDefaultCertificate": true,
+            "MinimumProtocolVersion": "TLSv1",
+            "CertificateSource": "cloudfront"
+        },
+        "Restrictions": {
+            "GeoRestriction": {
+                "RestrictionType": "none",
+                "Quantity": 0
+            }
+        },
+        "WebACLId": "",
+        "HttpVersion": "http2",
+        "IsIPV6Enabled": true
+    },
+    "Tags": {
+        "Items": [
+            {
+                "Key": "Name",
+                "Value": "<<CLOUDFRONT-DISTRIBUTION-NAME>>"
+            }
+        ]
+    }
+}

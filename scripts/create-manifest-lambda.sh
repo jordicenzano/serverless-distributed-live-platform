@@ -8,14 +8,14 @@ set -e
 
 # Create role
 echo "Creating role $IAM_LAMBDA_ROLE_MANIFEST in $AWS_REGION"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam create-role --role-name $IAM_LAMBDA_ROLE_MANIFEST --assume-role-policy-document file://lambda-role-trust-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam create-role --role-name $IAM_LAMBDA_ROLE_MANIFEST --assume-role-policy-document file://../config/lambda-role-trust-policy.json
 
 # Add policies to role
 echo "Adding policy $IAM_POLICY_DDB_READ_ACCESS to role $IAM_LAMBDA_ROLE_MANIFEST"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_MANIFEST --policy-name $IAM_POLICY_DDB_READ_ACCESS --policy-document file://ddb-read-access-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_MANIFEST --policy-name $IAM_POLICY_DDB_READ_ACCESS --policy-document file://../config/ddb-read-access-policy.json
 
 echo "Adding policy $IAM_POLICY_LAMBDA_LOGS to role $IAM_LAMBDA_ROLE_MANIFEST"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_MANIFEST --policy-name $IAM_POLICY_LAMBDA_LOGS --policy-document file://cloudwatch-lambda-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_LAMBDA_ROLE_MANIFEST --policy-name $IAM_POLICY_LAMBDA_LOGS --policy-document file://../config/cloudwatch-lambda-policy.json
 
 # Get role ARN
 ARN_IAM_LAMBDA_ROLE_MANIFEST=$(aws $AWS_FLAGS_TEXT iam get-role --role-name $IAM_LAMBDA_ROLE_MANIFEST --query 'Role.Arn')

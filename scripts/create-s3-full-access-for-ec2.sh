@@ -8,11 +8,11 @@ set -e
 
 # Create role
 echo "Creating role $IAM_EC2_ROLE_S3_FULL_ACCESS in $AWS_REGION"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam create-role --role-name $IAM_EC2_ROLE_S3_FULL_ACCESS --assume-role-policy-document file://ec2-role-trust-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam create-role --role-name $IAM_EC2_ROLE_S3_FULL_ACCESS --assume-role-policy-document file://../config/ec2-role-trust-policy.json
 
 # Add policy to role
 echo "Adding policy $IAM_POLICY_S3_FULL_ACCESS to role $IAM_EC2_ROLE_S3_FULL_ACCESS"
-aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_EC2_ROLE_S3_FULL_ACCESS --policy-name $IAM_POLICY_S3_FULL_ACCESS --policy-document file://s3-full-access-policy.json
+aws $AWS_FLAGS_JSON --region $AWS_REGION iam put-role-policy --role-name $IAM_EC2_ROLE_S3_FULL_ACCESS --policy-name $IAM_POLICY_S3_FULL_ACCESS --policy-document file://../config/s3-full-access-policy.json
 
 # Create instance profile
 echo "Creating instance profile $IAM_INSTANCE_PROFILE_S3_FULL_ACCESS"

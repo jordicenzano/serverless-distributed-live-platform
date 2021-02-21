@@ -1,0 +1,247 @@
+{
+  "config-name": {
+    "S": "default"
+  },
+  "desc": {
+    "S": "1080p SLOW (Premium 6 renditions)"
+  },
+  "value": {
+    "M": {
+      "copyOriginalContentTypeToABRChunks": {
+        "BOOL": true
+      },
+      "copyOriginalMetadataToABRChunks": {
+        "BOOL": true
+      },
+      "mediaCdnPrefix": {
+        "S": "https://<<MEDIA-CDN-DOMAIN-NAME>>"
+      },
+      "overlayEncodingData": {
+        "BOOL": true
+      },
+      "overlayMessage": {
+        "S": "Test-"
+      },
+      "publicReadToABRChunks": {
+        "BOOL": false
+      },
+      "renditions": {
+        "L": [
+          {
+            "M": {
+              "height": {
+                "N": "1080"
+              },
+              "ID": {
+                "S": "1080p"
+              },
+              "video_buffersize": {
+                "N": "7000000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "3500000"
+              },
+              "video_x264_params": {
+                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0"
+              },
+              "width": {
+                "N": "1920"
+              }
+            }
+          },
+          {
+            "M": {
+              "height": {
+                "N": "720"
+              },
+              "ID": {
+                "S": "720p"
+              },
+              "video_buffersize": {
+                "N": "4000000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "2000000"
+              },
+              "video_x264_params": {
+                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0"
+              },
+              "width": {
+                "N": "1280"
+              }
+            }
+          },
+          {
+            "M": {
+              "height": {
+                "N": "480"
+              },
+              "ID": {
+                "S": "480p"
+              },
+              "video_buffersize": {
+                "N": "2000000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "1000000"
+              },
+              "video_x264_params": {
+                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
+              },
+              "width": {
+                "N": "854"
+              }
+            }
+          },
+          {
+            "M": {
+              "height": {
+                "N": "360"
+              },
+              "ID": {
+                "S": "360p"
+              },
+              "video_buffersize": {
+                "N": "1000000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "500000"
+              },
+              "video_x264_params": {
+                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
+              },
+              "width": {
+                "N": "640"
+              }
+            }
+          },
+          {
+            "M": {
+              "height": {
+                "N": "240"
+              },
+              "ID": {
+                "S": "240p"
+              },
+              "video_buffersize": {
+                "N": "500000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "250000"
+              },
+              "video_x264_params": {
+                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
+              },
+              "width": {
+                "N": "426"
+              }
+            }
+          },
+          {
+            "M": {
+              "height": {
+                "N": "144"
+              },
+              "ID": {
+                "S": "144p"
+              },
+              "video_buffersize": {
+                "N": "200000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "100000"
+              },
+              "video_pix_fmt": {
+                "S": "yuv420p"
+              },
+              "video_x264_params": {
+                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
+              },
+              "width": {
+                "N": "256"
+              }
+            }
+          }
+        ]
+      },
+      "s3OutputPrefix": {
+        "S": "output/"
+      },
+      "video_pix_fmt": {
+        "S": "yuv420p"
+      }
+    }
+  }
+}
