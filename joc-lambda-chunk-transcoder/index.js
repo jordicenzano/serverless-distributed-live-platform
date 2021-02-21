@@ -37,7 +37,7 @@ const s3MetadataHeaders = {
     WALL_CLOCK_NS: 'joc-hls-createdat-ns'
 }
 
-const dbbConfigData = {
+const dbbConfigDataDefault = {
     // General 
     region: 'us-east-1',
     
@@ -45,7 +45,7 @@ const dbbConfigData = {
     configName: 'default',
     tableName: 'joc-dist-live-config',
 }
-const dbbChunksData = {
+const dbbChunksDataDefault = {
     // General 
     region: 'us-east-1',
 
@@ -120,6 +120,10 @@ exports.handler = async (event, context) => {
     prepareFfmpeg(context);
     testFfmpeg(context);
 
+    // Update DDB configs
+    const dbbConfigData = parseDDBConfig(process.env, dbbConfigDataDefault);
+    const dbbChunksData = parseDDBChunks(aaa, dbbChunksDataDefault);
+
     // Fetch config and return it
     const transcoderConfig = new LiveTranscoderConfig()
     await transcoderConfig.loadFromDDB(dbbConfigData.region, dbbConfigData.tableName, dbbConfigData.configName);
@@ -134,7 +138,7 @@ exports.handler = async (event, context) => {
         for (let r = 0; r < numRecords; r++) {
             // Process one after the other
             logData(logType.INFO, 'Processing record', '', '', 0, `${r}/${numRecords}`);
-            retRecord = await processRecord(event.Records[r], transcoderConfig, context)
+            retRecord = await processRecord(event.Records[r], dbbChunksData, transcoderConfig, context)
             ret.push(retRecord);
         }    
     }
@@ -144,7 +148,7 @@ exports.handler = async (event, context) => {
     return event;
 }
 
-async function processRecord(record, transcoderConfig, context) {
+async function processRecord(record, dbbChunksData, transcoderConfig, context) {
     return new Promise( (resolutionFunc, rejectionFunc) => {
         const timers = {
             'start': 0,
@@ -421,6 +425,34 @@ async function downloadS3Object(bucket, objectKey, localPathFile) {
 }
 
 // Helper functions
+
+function parseDDBConfig(envVars, defaultDBBConfig) {
+    ret = defaultDBBConfig;
+    if ((typeof(envVars.AWS_REGION) === 'string') && (envVars.AWS_REGION != "")) {
+        ret.region = envVars.AWS_REGION;
+    }
+    if ((typeof(envVars.DDB_CONFIG_TABLE_NAME) === 'string') && (envVars.DDB_CONFIG_TABLE_NAME != "")) {
+        ret.tableName = envVars.DDB_CONFIG_TABLE_NAME;
+    }
+
+    console.log(`Dynamo table config data: ${json.stringify(ret)}`);
+
+    return ret;
+}
+
+function parseDDBChunks(envVars, defaultDBBChunks) {
+    ret = defaultDBBChunks;
+    if ((typeof(envVars.AWS_REGION) === 'string') && (envVars.AWS_REGION != "")) {
+        ret.region = envVars.AWS_REGION;
+    }
+    if ((typeof(envVars.DDB_CONFIG_TABLE_CHUNKS) === 'string') && (envVars.DDB_CONFIG_TABLE_CHUNKS != "")) {
+        ret.tableName = envVars.DDB_CONFIG_TABLE_CHUNKS;
+    }
+
+    console.log(`Dynamo table chunks data: ${json.stringify(ret)}`);
+
+    return ret;
+}
 
 function extractFromMetadataHeader(srcMetadata, name) {
     if (!(name in srcMetadata)) {
