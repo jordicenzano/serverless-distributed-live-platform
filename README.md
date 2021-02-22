@@ -166,11 +166,11 @@ To allow the playback of that live stream we implemented a "minimalist" manifest
 This function is invoked when a players asks for a manifest, so when a player `GET` a URL like this:
 
 ```
-https://CDN-PREPEND/video/streamId/manifest.m3u8?SEE-QS-POSSIBILITIES
+https://API-CDN-PREPEND/video/streamId/manifest.m3u8?SEE-QS-POSSIBILITIES
 ```
 OR
 ```
-https://CDN-PREPEND/video/streamId/renditionID/chunklist.m3u8?SEE-QS-POSSIBILITIES
+https://API-CDN-PREPEND/video/streamId/renditionID/chunklist.m3u8?SEE-QS-POSSIBILITIES
 ```
 
 Valid querystring (QS) parameters are:
@@ -206,6 +206,11 @@ To isolate our backend from the number of players we added a CDN that is used to
 We added a Cloudfront file distribution with origin shield activated on top of the S3
 - TTL: Could be very large, they are NOT mutable, and they are the same for VOD (highlights) and LIVE
 - Cache key: It is the URL path
+
+The URL structure for the chunks is like:
+```
+https://CDN-PREPEND/streamID/reditionID/base_00000.ts
+```
 
 #### Manifests
 We we also activated the cache on [API Gateway](https://aws.amazon.com/api-gateway/) to serve the manifests.
