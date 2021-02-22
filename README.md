@@ -279,6 +279,7 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 
 *Note: Please follow the order below, there are some dependencies on those steps*
 
+- Modify the vars `AWS_REGION` and `BASE_NAME` from [base.sh](./scripts/base.sh) with your region and base name
 - [Set up edge machine](./docs/setup-edge.md)
 - [Set up S3 bucket](./docs/setup-s3.md)
 - [Give EC2 RW permissions to your S3](./docs/grant-s3-full-access-to-ec2.md)
@@ -287,7 +288,7 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 - [Set up CloudFront as media CDN](./docs/create-cloudfront.md)
 - [Set up and populate dynamoDB](./docs/setup-ddb.md)
 
-//TODO
+//TODO (already downloaded swagger definition)
 - [Set up API Gateway (and manifest lambda trigger)]()
 
 # Test

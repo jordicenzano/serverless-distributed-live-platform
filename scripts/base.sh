@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
 # Variables used to create AWS env
+# **** MODIFY THOSE 2 VARS WITH THE REGION AND BASE NAMES YOU WANT!!
 AWS_REGION="eu-west-3" # Paris
 BASE_NAME="joc-live-dist-transcoder"
+
+# ***********
+
 S3_BUCKET_NAME="$BASE_NAME-bucket-media"
 
 IAM_EC2_ROLE_S3_FULL_ACCESS="$BASE_NAME-ec2-role-s3-full-access"

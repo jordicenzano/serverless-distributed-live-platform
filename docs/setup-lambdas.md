@@ -1,6 +1,6 @@
 # Set up lambdas
 
-- We need to create Lambda trancode, that means:
+- We need to create Lambda transcode, that means:
   - Create execution role
   - Create execution policies (permissions)
   - Attach permissions to role
