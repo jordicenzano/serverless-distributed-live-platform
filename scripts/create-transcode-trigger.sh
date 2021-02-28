@@ -8,7 +8,7 @@ set -e
 
 # Create role
 echo "Adding permission to S3 ($S3_BUCKET_NAME) to invoke $LAMBDA_CHUNK_TRANSCODER_NAME lambda"
-#aws $AWS_FLAGS_JSON --region $AWS_REGION lambda add-permission --function-name $LAMBDA_CHUNK_TRANSCODER_NAME --principal s3.amazonaws.com --statement-id s3invoke --action "lambda:InvokeFunction" --source-arn arn:aws:s3:::$S3_BUCKET_NAME
+aws $AWS_FLAGS_JSON --region $AWS_REGION lambda add-permission --function-name $LAMBDA_CHUNK_TRANSCODER_NAME --principal s3.amazonaws.com --statement-id s3invoke --action "lambda:InvokeFunction" --source-arn arn:aws:s3:::$S3_BUCKET_NAME
 
 ARN_LAMBDA_CHUNK_TRANSCODER=$(aws $AWS_FLAGS_TEXT --region $AWS_REGION lambda get-function --function-name $LAMBDA_CHUNK_TRANSCODER_NAME --query 'Configuration.FunctionArn')
 

@@ -292,9 +292,7 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 - [Set up transcode lambda trigger to new ingest files](./docs/setup-lambda-transcode-trigger.md)
 - [Set up CloudFront as media CDN](./docs/create-cloudfront.md)
 - [Set up and populate dynamoDB](./docs/setup-ddb.md)
-
-//TODO (already downloaded swagger definition)
-- [Set up API Gateway (and manifest lambda trigger)]()
+- [Set up API Gateway (and manifest lambda trigger)](./docs/setup-api-gateway.md)
 
 # Test
 This video will show you how to do some initial tests
