@@ -294,8 +294,16 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 - [Set up and populate dynamoDB](./docs/setup-ddb.md)
 - [Set up API Gateway (and manifest lambda trigger)](./docs/setup-api-gateway.md)
 
-# Test
+# Test / Demo
 This video will show you how to do some initial tests
+
+Note:
+- The API CDN prepend will have this format: `https://API-ID.execute-api.AWS-REGION.amazonaws.com/prod/video`
+- You can get the API CDN prepend doing:
+```
+cd scripts
+./get-api-cdn-prepend.sh
+```
 
 [![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
 TODO: Record the video

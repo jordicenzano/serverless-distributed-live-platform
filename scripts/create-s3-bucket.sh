@@ -19,3 +19,6 @@ aws $AWS_FLAGS_JSON --region $AWS_REGION s3api put-bucket-lifecycle-configuratio
 
 echo "Blocking public access"
 aws $AWS_FLAGS_JSON --region $AWS_REGION s3api put-public-access-block --bucket $S3_BUCKET_NAME --public-access-block-configuration file://../config/s3-public-access.json
+
+echo "Setting CORS policy"
+aws $AWS_FLAGS_JSON --region $AWS_REGION s3api put-bucket-cors --bucket $S3_BUCKET_NAME --cors-configuration file://../config/s3-cors.json
