@@ -31,13 +31,13 @@ AWS_ACCOUNT_ID=$(aws $AWS_FLAGS_TEXT --region $AWS_REGION sts get-caller-identit
 
 # Grant permissions to API Gateway to call manifest lambda
 echo "Grant permissions to API $AWS_APIGATEWAY_NAME (API: $API_ID, AWS ACC ID: $AWS_ACCOUNT_ID) to call manifest lambda"
-aws $AWS_FLAGS_JSON --region $AWS_REGION lambda add-permission --function-name $LAMBDA_MANIFEST_NAME --statement-id apigateway-to-manifest --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:$AWS_REGION:$AWS_ACCOUNT_ID:$API_ID/*/GET/video/*/manifest.m3u8"
-aws $AWS_FLAGS_JSON --region $AWS_REGION lambda add-permission --function-name $LAMBDA_MANIFEST_NAME --statement-id apigateway-to-chunklist --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:$AWS_REGION:$AWS_ACCOUNT_ID:$API_ID/*/GET/video/*/*/chunklist.m3u8"
+aws $AWS_FLAGS_JSON --region $AWS_REGION lambda add-permission --function-name $LAMBDA_MANIFEST_NAME --statement-id $AWS_APIGATEWAY_NAME-apigateway-to-manifest --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:$AWS_REGION:$AWS_ACCOUNT_ID:$API_ID/*/GET/video/*/manifest.m3u8"
+aws $AWS_FLAGS_JSON --region $AWS_REGION lambda add-permission --function-name $LAMBDA_MANIFEST_NAME --statement-id $AWS_APIGATEWAY_NAME-apigateway-to-chunklist --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:$AWS_REGION:$AWS_ACCOUNT_ID:$API_ID/*/GET/video/*/*/chunklist.m3u8"
 
 # Deploy API & activate cache
 echo "Deploying API $AWS_APIGATEWAY_NAME (API: $API_ID), to stage prod"
 aws $AWS_FLAGS_JSON --region $AWS_REGION apigateway create-deployment --cache-cluster-enabled --cache-cluster-size 0.5 --rest-api-id $API_ID --stage-name prod
 
-# Overwrite cache for chunklist
+# Overwrite cache for all methods and set = 1s
 echo "Activate cache to 1s for $AWS_APIGATEWAY_NAME (API: $API_ID) in stage prod"
 aws $AWS_FLAGS_JSON --region $AWS_REGION apigateway update-stage --rest-api-id $API_ID --stage-name prod --patch-operations "op=replace,path=/*/*/caching/ttlInSeconds,value=1"

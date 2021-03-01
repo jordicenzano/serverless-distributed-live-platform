@@ -27,7 +27,7 @@ LAMBDA_MANIFEST_NAME="$BASE_NAME-lambda-manifest"
 CLOUDFRONT_DISTRIBUTION_NAME="$BASE_NAME-cloudfront-media"
 CLOUDFRONT_ORIGIN_SHIELD_REGION="eu-west-2" # London (Not all regions are available for origin shield)
 
-AWS_APIGATEWAY_NAME="Live distribuited platform"
+AWS_APIGATEWAY_NAME="api-live-distribuited-platform"
 
 # AWS default input flabs
 AWS_FLAGS="--no-cli-pager --no-cli-auto-prompt"

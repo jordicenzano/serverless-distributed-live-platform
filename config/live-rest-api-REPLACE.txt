@@ -94,7 +94,7 @@
     "/video/{streamID}/manifest.m3u8" : {
       "get" : {
         "consumes" : [ "application/json" ],
-        "produces" : [ "application/vnd.apple.mpegurl", "application/json" ],
+        "produces" : [ "application/vnd.apple.mpegurl" ],
         "parameters" : [ {
           "name" : "latency",
           "in" : "query",
@@ -255,7 +255,7 @@
     "/video/{streamID}/{renditionID}/chunklist.m3u8" : {
       "get" : {
         "consumes" : [ "application/json" ],
-        "produces" : [ "application/json" ],
+        "produces" : [ "application/vnd.apple.mpegurl" ],
         "parameters" : [ {
           "name" : "latency",
           "in" : "query",
