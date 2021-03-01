@@ -268,7 +268,7 @@ function getURLData(event, defaultConfig) {
         if (checkPresentAndType(event.queryStringParameters, 'chunksNumber', 'string', true)) {
             ret.chunksNumber = parseInt(event.queryStringParameters.chunksNumber);
         }
-        // For VOD and event there we return all media
+        // For VOD and event we return all media
         if ((event.queryStringParameters.liveType === liveType.VOD) || (event.queryStringParameters.liveType === liveType.EVENT)) {
             ret.chunksNumber = -1;
         }
