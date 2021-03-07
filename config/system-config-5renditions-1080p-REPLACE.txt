@@ -3,7 +3,7 @@
     "S": "default"
   },
   "desc": {
-    "S": "1080p SLOW (Premium 6 renditions)"
+    "S": "1080p SLOW (Premium 5 renditions)"
   },
   "value": {
     "M": {
@@ -36,7 +36,7 @@
                 "S": "1080p"
               },
               "video_buffersize": {
-                "N": "7000000"
+                "N": "12000000"
               },
               "video_crf": {
                 "N": "23"
@@ -51,10 +51,7 @@
                 "S": "high"
               },
               "video_maxrate": {
-                "N": "3500000"
-              },
-              "video_x264_params": {
-                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0"
+                "N": "6000000"
               },
               "width": {
                 "N": "1920"
@@ -68,6 +65,37 @@
               },
               "ID": {
                 "S": "720p"
+              },
+              "video_buffersize": {
+                "N": "8000000"
+              },
+              "video_crf": {
+                "N": "23"
+              },
+              "video_h264_bpyramid": {
+                "S": "strict"
+              },
+              "video_h264_preset": {
+                "S": "slow"
+              },
+              "video_h264_profile": {
+                "S": "high"
+              },
+              "video_maxrate": {
+                "N": "4000000"
+              },
+              "width": {
+                "N": "1280"
+              }
+            }
+          },
+          {
+            "M": {
+              "height": {
+                "N": "540"
+              },
+              "ID": {
+                "S": "540p"
               },
               "video_buffersize": {
                 "N": "4000000"
@@ -87,45 +115,8 @@
               "video_maxrate": {
                 "N": "2000000"
               },
-              "video_x264_params": {
-                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0"
-              },
               "width": {
-                "N": "1280"
-              }
-            }
-          },
-          {
-            "M": {
-              "height": {
-                "N": "480"
-              },
-              "ID": {
-                "S": "480p"
-              },
-              "video_buffersize": {
-                "N": "2000000"
-              },
-              "video_crf": {
-                "N": "23"
-              },
-              "video_h264_bpyramid": {
-                "S": "strict"
-              },
-              "video_h264_preset": {
-                "S": "slow"
-              },
-              "video_h264_profile": {
-                "S": "high"
-              },
-              "video_maxrate": {
-                "N": "1000000"
-              },
-              "video_x264_params": {
-                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
-              },
-              "width": {
-                "N": "854"
+                "N": "960"
               }
             }
           },
@@ -138,7 +129,7 @@
                 "S": "360p"
               },
               "video_buffersize": {
-                "N": "1000000"
+                "N": "730000"
               },
               "video_crf": {
                 "N": "23"
@@ -153,10 +144,7 @@
                 "S": "high"
               },
               "video_maxrate": {
-                "N": "500000"
-              },
-              "video_x264_params": {
-                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
+                "N": "365000"
               },
               "width": {
                 "N": "640"
@@ -166,13 +154,13 @@
           {
             "M": {
               "height": {
-                "N": "240"
+                "N": "234"
               },
               "ID": {
-                "S": "240p"
+                "S": "234p"
               },
               "video_buffersize": {
-                "N": "500000"
+                "N": "290000"
               },
               "video_crf": {
                 "N": "23"
@@ -187,50 +175,10 @@
                 "S": "high"
               },
               "video_maxrate": {
-                "N": "250000"
-              },
-              "video_x264_params": {
-                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
+                "N": "145000"
               },
               "width": {
-                "N": "426"
-              }
-            }
-          },
-          {
-            "M": {
-              "height": {
-                "N": "144"
-              },
-              "ID": {
-                "S": "144p"
-              },
-              "video_buffersize": {
-                "N": "200000"
-              },
-              "video_crf": {
-                "N": "23"
-              },
-              "video_h264_bpyramid": {
-                "S": "strict"
-              },
-              "video_h264_preset": {
-                "S": "slow"
-              },
-              "video_h264_profile": {
-                "S": "high"
-              },
-              "video_maxrate": {
-                "N": "100000"
-              },
-              "video_pix_fmt": {
-                "S": "yuv420p"
-              },
-              "video_x264_params": {
-                "S": "aq-strength=1.3:deblock=-1,-1:no-dct-decimate=1:psy-rd=1.0,0.2:rc_lookahead=20:weightp=0 -b-pyramid strict"
-              },
-              "width": {
-                "N": "256"
+                "N": "416"
               }
             }
           }

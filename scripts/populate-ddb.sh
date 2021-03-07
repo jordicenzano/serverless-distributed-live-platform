@@ -16,8 +16,8 @@ echo "Getting CDN domain name for ID: $CF_ID (Arn: $CF_DIST_ARN)"
 MEDIA_CDN_DOMAIN_NAME=$(aws $AWS_FLAGS_TEXT cloudfront get-distribution --id $CF_ID --query 'Distribution.DomainName')
 
 # Replacements
-SOURCE_FILE_CONFIG="../config/system-config-6renditions-1080p-REPLACE.txt"
-DEST_FILE_CONFIG="../config/system-config-6renditions-1080p.json"
+SOURCE_FILE_CONFIG="../config/system-config-5renditions-1080p-REPLACE.txt"
+DEST_FILE_CONFIG="../config/system-config-5renditions-1080p.json"
 
 sed -e "s/<<MEDIA-CDN-DOMAIN-NAME>>/${MEDIA_CDN_DOMAIN_NAME}/g" $SOURCE_FILE_CONFIG > $DEST_FILE_CONFIG
 

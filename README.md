@@ -2,7 +2,7 @@
 
 This system allows you to stream SRT (h264 + AAC) and create the live ABR in a fully distributed way. This implementation uses [AWS Lambdas](https://aws.amazon.com/lambda/) to perform a segmented serverless transcoding, this allow us to instantly scale to any type of renditions and transcoding settings, tested up to 2160p@60fps (h264 - AAC).
 
-[![How it works video](/docs/pics/LDE-demo-intro.jpg)](https://youtu.be/f7TkdI4f3jU)
+[![How it works video](/docs/pics/lde-intro-video.jpg)](https://youtu.be/f7TkdI4f3jU)
 
 This [player demo page](https://jordicenzano.github.io/serverless-distributed-live-platform/) allows you to simple create playback URLs for this platform, and also includes a player to facilitate testing (based on [VideoJS](https://videojs.com/))
 
@@ -138,11 +138,13 @@ This stateless function performs the following actions:
   }
 }
 ```
+Note: To tune h264 transcode you can add the item `video_x264_params` to each rendition
+
 - Applies that config and transcodes the input chunk (the one specified un the [S3 event](https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html))
 
 - It upload the resulting renditions S3, following the read config
 
-- It updates the DynamoDB chunks table with the recently created chunks info, see entry example:
+- It updates the DynamoDB chunks table with the recently created chunks info, see an entry example:
 ```json
 {
   "duration-ms": 2002,
@@ -174,17 +176,17 @@ https://API-CDN-PREPEND/video/streamId/renditionID/chunklist.m3u8?SEE-QS-POSSIBI
 ```
 
 Valid querystring (QS) parameters are:
-- `liveType`: Indicates what manifest we want (`live`, `event`, `vod`)
+- `liveType` (default = `live`): Indicates what manifest we want (`live`, `event`, `vod`)
   - **This param allows you to create (chunk accurate) highlights before live ends (`vod`), or activate live rewind (`event`)**
-- `chunksNumber`: Indicate how many chunks we want in the response
+- `chunksNumber` (default = 3): Indicate how many chunks we want in the response
   - Only valid if `liveType == live`
-- `latency`: Indicate how many seconds of latency you want to add.
-  - This is recommended to be equal or bigger to the last possible transcoding time for your longer chunk
-- `chunksLatency`: Indicate how many chunk of latency you want to add.
+- `latency` (default = 20): Indicate how many seconds of latency you want to add.
+  - This is recommended to be equal or bigger to the transcoding time for your longer / more complex chunk
+- `chunksLatency` (default = 0): Indicate how many chunks of latency you want to add, so the last chunk in your manifest will ne the last one generated - `chunksLatency` chunks
   - This is recommended to be equal or bigger to the last possible transcoding time for your longer chunk
   - If you set `latency` takes precedence over this
-- `fromEpochS`: epoch time in seconds to start getting chunks
-- `toEpochS`: epoch time in seconds to stop getting chunks
+- `fromEpochS` (default = -1): epoch time in seconds to start getting chunks
+- `toEpochS` (default = -1): epoch time in seconds to stop getting chunks
   - Only valid if `liveType == vod`
   - **Very useful to create VOD highlights from an ongoing live stream**, in combination with `fromEpochS`
 
@@ -221,7 +223,7 @@ We we also activated the cache on [API Gateway](https://aws.amazon.com/api-gatew
 
 After proving the system works we gathered few basic metrics, for that we used 2 types of live streams:
 
-- **HM**: High motion stream, it is a professionally produced sports VOD stream (that we transformed in a live stream using transmuxing and loop)
+- **HM**: High motion stream, it is a professionally produced 4K HDR sports VOD stream (that we transcoded to the desired settings and converted into a live stream using transmuxing and loop)
   - 2160p@59.94 20Mbps h264-AAC, 2s GOP
 - **LM**: Low motion stream, generated from IPhone Xs with [Larix](https://softvelum.com/larix/) app
   - 2160p@30 12Mbps h264-AAC, 2s GOP
@@ -285,6 +287,7 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 *Note: Please follow the order below, there are some dependencies on those steps*
 
 - Modify the vars `AWS_REGION` and `BASE_NAME` from [base.sh](./scripts/base.sh) with your region and base name
+- [Allow RW permissions to your local AWS CLI user](./doc/../docs/local-aws-cli-user-permissions.md)
 - [Set up edge machine](./docs/setup-edge.md)
 - [Set up S3 bucket](./docs/setup-s3.md)
 - [Give EC2 RW permissions to your S3](./docs/grant-s3-full-access-to-ec2.md)
@@ -295,18 +298,17 @@ We are assuming you have [AWS CLI](https://aws.amazon.com/cli/) installed and co
 - [Set up API Gateway (and manifest lambda trigger)](./docs/setup-api-gateway.md)
 
 # Test / Demo
-This video will show you how to do some initial tests
+This video will show you how to do some initial tests:
+[![Demo video](./docs/pics/lde-demo-video.png)](https://youtu.be/qRWk_fXULUE)
 
-Note:
-- The API CDN prepend will have this format: `https://API-ID.execute-api.AWS-REGION.amazonaws.com/prod/video`
-- You can get the API CDN prepend doing:
+Notes:
+- The API CDN prepend will have this format: `https://API-ID.execute-api.AWS-REGION.amazonaws.com/prod/video`. You can get the API CDN prepend doing:
 ```
 cd scripts
 ./get-api-cdn-prepend.sh
 ```
-
-[![Demo video](https://img.youtube.com/vi/ESMNOfE2aZY/0.jpg)](https://www.youtube.com/watch?v=ESMNOfE2aZY)
-TODO: Record the video
+- You can use this [player demo page](https://jordicenzano.github.io/serverless-distributed-live-platform/) to generate playback URLs
 
 # TODOs
 - Create a cloudformation template for AWS infrastructure. Or create a simple and better AWS CLI script
+- Use a storage more adequate for live streaming than S3

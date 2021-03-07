@@ -1,14 +1,6 @@
-# Give EC2 RW permissions to your S3
-This will allow your EC2 edge machine to write into your new S3 bucket
+# Grant EC2 edge full access to your S3
+Your EC2 edge machine need to upload (write) chunks to S3, so it needs write rights. To allow that:
 
-## Pre-requisite
-You should allow your local AWS CLI user to perform some actions on your AWS resources
-
-![Local user needed policies](/docs/pics/grant-local-user-IAM-access.png)
-
-*Note: I recommend remove some of those policies after the inital set up (specially IAM full access policy). This is just an easy and unsafe way to avoid a permissions hassle*
-
-# Actions
 - Create an IAM role with S3 full access
 ```bash
 ./create-s3-full-access-for-ec2.sh
