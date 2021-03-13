@@ -247,7 +247,7 @@ For the following test we have used:
 In the following table you can see the avg and max transcoding Lambda execution time in ms.
 
 *Remember Lambdas are billed by execution time, so we can easily calculate the CPU transcoding cost from those values and segmenter chunk size:
-Number of lambdas invoked per hour = 3600/ChunkSize*
+Number of lambdas invoked per hour = (60\*60)/ChunkLength(s)*
 
 | Video    | Enc preset | Exec. time Avg (ms) | Exec. time Max (ms) | Transc. latency (s) | Transc. cost per 1h |
 | -------- |:----------:| --------:|---------:| -------------------:|--------------------:|
