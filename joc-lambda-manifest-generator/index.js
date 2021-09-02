@@ -6,6 +6,7 @@ const aws = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 const querystring = require("querystring");
 const LiveTranscoderConfig = require('./live-transcoder-config');
+const path = require('path');
 
 const DDB_MAX_RETRIES_DEF = 3;
 
@@ -73,7 +74,8 @@ const filterFromManifestToChunklistQS = [
     'chunksNumber', 
     'fromEpochS', 
     'toEpochS', 
-    'liveType'
+    'liveType',
+    'alternateChunkStreamID'
 ];
 
 class HTTPErrorData extends Error {
@@ -104,7 +106,8 @@ exports.handler = async (event, context) => {
         liveType: liveType.LIVE,
         manifestType: manifestType.NONE,
         renditionID: '',
-        streamID: ''
+        streamID: '',
+        alternateChunkStreamID: ''
     }
 
     const startMs = getTimeInMilliseconds();
@@ -194,7 +197,23 @@ function createChunklist(manifestConfig, transcoderConfig, chunks) {
             manifestLines.push("#EXT-X-INDEPENDENT-SEGMENTS");
         }
         manifestLines.push(`#EXTINF:${(chunk['duration-ms']/1000).toFixed(8)},`);
-        manifestLines.push(new URL(chunk['file-path'], transcoderConfig.getParam('mediaCdnPrefix')).toString());
+
+        alternateChunkStreamID = manifestConfig.alternateChunkStreamID
+        if ((alternateChunkStreamID !== "") && (chunk['seq-number'] % 2 === 0)) {
+            // This is used for active active testing purposes ONLY!!
+            filePath = path.parse(chunk['file-path'])
+            pathDirs = filePath.dir.split("/")
+            if (pathDirs.length > 0) {
+                pathDirs[0] = alternateChunkStreamID
+            }
+            filePath.dir = pathDirs.join('/')
+            finalChunkPath = path.format(filePath)
+
+            manifestLines.push(new URL(finalChunkPath, transcoderConfig.getParam('mediaCdnPrefix')).toString());
+        } else {
+            manifestLines.push(new URL(chunk['file-path'], transcoderConfig.getParam('mediaCdnPrefix')).toString());
+        }
+
         // Is last one
         if ((n === 0) && (manifestConfig.liveType === liveType.VOD)) {
             manifestLines.push('#EXT-X-ENDLIST');
@@ -295,6 +314,13 @@ function getURLData(event, defaultConfig) {
         // Check from - to
         if ((ret.fromEpochS >= 0) && (ret.toEpochS >= 0) && (ret.toEpochS <= ret.fromEpochS)) {
             throw new HTTPErrorData(400, 'toEpochS can not be equal or lower than fromEpochS');
+        }
+
+        // Only used for active-active testing!!!!
+        if (checkPresentAndType(event.queryStringParameters, 'alternateChunkStreamID', 'string')) {
+            if (event.queryStringParameters.alternateChunkStreamID !== "") {
+                ret.alternateChunkStreamID = event.queryStringParameters.alternateChunkStreamID;
+            }
         }
     }
     return ret;

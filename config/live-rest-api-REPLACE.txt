@@ -121,6 +121,11 @@
           "required" : false,
           "type" : "string"
         }, {
+          "name" : "alternateChunkStreamID",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
           "name" : "streamID",
           "in" : "path",
           "required" : true,
@@ -161,11 +166,11 @@
             }
           },
           "requestTemplates" : {
-            "application/json" : "{\n    \"pathParameters\": {\n       \"streamID\":  \"$input.params('streamID')\",\n       \"renditionID\":  \"$input.params('renditionID')\"\n    },\n    \"queryStringParameters\": {\n        \"liveType\":  \"$input.params('liveType')\", \n        \"chunksLatency\": \"$input.params('chunksLatency')\",\n        \"fromEpochS\": \"$input.params('fromEpochS')\",\n        \"chunksNumber\": \"$input.params('chunksNumber')\",\n        \"toEpochS\": \"$input.params('toEpochS')\",\n        \"latency\": \"$input.params('latency')\"\n    }\n}"
+            "application/json" : "{\n    \"pathParameters\": {\n       \"streamID\":  \"$input.params('streamID')\",\n       \"renditionID\":  \"$input.params('renditionID')\"\n    },\n    \"queryStringParameters\": {\n        \"liveType\":  \"$input.params('liveType')\", \n        \"chunksLatency\": \"$input.params('chunksLatency')\",\n        \"fromEpochS\": \"$input.params('fromEpochS')\",\n        \"chunksNumber\": \"$input.params('chunksNumber')\",\n        \"alternateChunkStreamID\": \"$input.params('alternateChunkStreamID')\",\n        \"toEpochS\": \"$input.params('toEpochS')\",\n        \"latency\": \"$input.params('latency')\"\n    }\n}"
           },
           "passthroughBehavior" : "when_no_templates",
           "cacheNamespace" : "ap2wsj",
-          "cacheKeyParameters" : [ "method.request.path.streamID", "method.request.querystring.chunksLatency", "method.request.querystring.chunksNumber", "method.request.querystring.fromEpochS", "method.request.querystring.liveType", "method.request.querystring.latency" ],
+          "cacheKeyParameters" : [ "method.request.path.streamID", "method.request.querystring.chunksLatency", "method.request.querystring.chunksNumber", "method.request.querystring.alternateChunkStreamID", "method.request.querystring.fromEpochS", "method.request.querystring.liveType", "method.request.querystring.latency" ],
           "contentHandling" : "CONVERT_TO_TEXT"
         }
       },
@@ -292,6 +297,11 @@
           "required" : false,
           "type" : "string"
         }, {
+          "name" : "alternateChunkStreamID",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
           "name" : "streamID",
           "in" : "path",
           "required" : true,
@@ -326,11 +336,11 @@
             }
           },
           "requestTemplates" : {
-            "application/json" : "{\n    \"pathParameters\": {\n       \"streamID\":  \"$input.params('streamID')\",\n       \"renditionID\":  \"$input.params('renditionID')\"\n    },\n    \"queryStringParameters\": {\n        \"liveType\":  \"$input.params('liveType')\", \n        \"chunksLatency\": \"$input.params('chunksLatency')\",\n        \"fromEpochS\": \"$input.params('fromEpochS')\",\n        \"chunksNumber\": \"$input.params('chunksNumber')\",\n        \"toEpochS\": \"$input.params('toEpochS')\",\n        \"latency\": \"$input.params('latency')\"\n    }\n}"
+            "application/json" : "{\n    \"pathParameters\": {\n       \"streamID\":  \"$input.params('streamID')\",\n       \"renditionID\":  \"$input.params('renditionID')\"\n    },\n    \"queryStringParameters\": {\n        \"liveType\":  \"$input.params('liveType')\", \n        \"chunksLatency\": \"$input.params('chunksLatency')\",\n        \"fromEpochS\": \"$input.params('fromEpochS')\",\n        \"chunksNumber\": \"$input.params('chunksNumber')\",\n        \"alternateChunkStreamID\": \"$input.params('alternateChunkStreamID')\",\n        \"toEpochS\": \"$input.params('toEpochS')\",\n        \"latency\": \"$input.params('latency')\"\n    }\n}"
           },
           "passthroughBehavior" : "when_no_templates",
           "cacheNamespace" : "zr3nnh",
-          "cacheKeyParameters" : [ "method.request.path.renditionID", "method.request.path.streamID", "method.request.path.renditionID", "method.request.path.streamID", "method.request.querystring.chunksLatency", "method.request.querystring.chunksNumber", "method.request.querystring.fromEpochS", "method.request.querystring.liveType", "method.request.querystring.toEpochS", "method.request.querystring.latency" ],
+          "cacheKeyParameters" : [ "method.request.path.renditionID", "method.request.path.streamID", "method.request.path.renditionID", "method.request.path.streamID", "method.request.querystring.chunksLatency", "method.request.querystring.chunksNumber", "method.request.querystring.alternateChunkStreamID", "method.request.querystring.fromEpochS", "method.request.querystring.liveType", "method.request.querystring.toEpochS", "method.request.querystring.latency" ],
           "contentHandling" : "CONVERT_TO_TEXT"
         }
       },
